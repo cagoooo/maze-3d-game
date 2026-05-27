@@ -21,6 +21,34 @@ import { DIFFICULTIES } from "../game/difficulty";
 
 type AdminUser = { uid: string; email: string | null } | null;
 
+const HOME_URL = (import.meta.env.BASE_URL ?? "/") + "";
+
+function BackToHomeLink({ variant = "light" }: { variant?: "light" | "subtle" }) {
+  const isSubtle = variant === "subtle";
+  return (
+    <a
+      href={HOME_URL}
+      data-testid="link-back-home"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        marginTop: isSubtle ? 0 : "1.5rem",
+        padding: "8px 16px",
+        borderRadius: "20px",
+        background: isSubtle ? "transparent" : "rgba(0,229,255,0.1)",
+        border: `1px solid rgba(0,229,255,${isSubtle ? "0.25" : "0.4"})`,
+        color: "#00e5ff",
+        textDecoration: "none",
+        fontSize: "0.85rem",
+        fontFamily: "inherit",
+      }}
+    >
+      ← 回遊戲主畫面
+    </a>
+  );
+}
+
 export function AdminPage() {
   const [user, setUser] = useState<AdminUser>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -150,20 +178,7 @@ export function AdminPage() {
           老師後台需要 Firebase 雲端排行榜。請依 D-SETUP.md 完成設定後，
           線上版才會顯示這個頁面。本地端可重新整理一次驗證。
         </p>
-        <a
-          href={
-            (import.meta.env.BASE_URL ?? "/") +
-            ""
-          }
-          style={{
-            marginTop: "2rem",
-            color: "#00e5ff",
-            textDecoration: "none",
-            borderBottom: "1px dotted",
-          }}
-        >
-          ← 回遊戲主畫面
-        </a>
+        <BackToHomeLink />
         <Footer />
       </div>
     );
@@ -223,6 +238,18 @@ export function AdminPage() {
           請使用學校 Gmail（@mail2.smes.tyc.edu.tw）登入。
           僅核可的管理員 UID 可以執行刪除操作。
         </p>
+        <p
+          style={{
+            color: "rgba(200,220,255,0.45)",
+            marginBottom: "1.5rem",
+            textAlign: "center",
+            fontSize: "0.8rem",
+          }}
+        >
+          只是學生不小心跑來這頁？沒事，回主畫面繼續玩 ↓
+        </p>
+        <BackToHomeLink variant="subtle" />
+        <div style={{ height: "1.5rem" }} />
         <button
           onClick={handleLogin}
           style={{
@@ -292,7 +319,8 @@ export function AdminPage() {
             登入：{user.email ?? user.uid}
           </div>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <BackToHomeLink variant="subtle" />
           <button
             onClick={handleExport}
             disabled={scores.length === 0}
