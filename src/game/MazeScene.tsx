@@ -243,6 +243,17 @@ function Enemy({
   );
 }
 
+export interface TouchInput {
+  /** -1 ~ 1，左 / 右 */
+  moveX: number;
+  /** -1 ~ 1，前(負) / 後(正)（拖曳螢幕往下是正 y，等同往後） */
+  moveZ: number;
+  /** 累積待消費的 yaw 增量（弧度）*/
+  lookYaw: number;
+  /** 累積待消費的 pitch 增量（弧度）*/
+  lookPitch: number;
+}
+
 function PlayerController({
   mazeData,
   orbPositions,
@@ -255,6 +266,8 @@ function PlayerController({
   playerStateRef,
   exploredGridRef,
   burstRef,
+  touchInputRef,
+  isTouchDevice,
 }: {
   mazeData: MazeData;
   orbPositions: { x: number; z: number }[];
@@ -267,6 +280,8 @@ function PlayerController({
   playerStateRef: React.MutableRefObject<{ gx: number; gz: number; yaw: number }>;
   exploredGridRef: React.MutableRefObject<boolean[][]>;
   burstRef: React.MutableRefObject<ParticleBurstHandle | null>;
+  touchInputRef: React.MutableRefObject<TouchInput>;
+  isTouchDevice: boolean;
 }) {
   const { camera, gl } = useThree();
   const playerPos = useRef(
@@ -344,6 +359,8 @@ function PlayerController({
     };
 
     const handleClick = () => {
+      // 觸控裝置不啟用 pointer lock（沒有滑鼠）
+      if (isTouchDevice) return;
       if (!isLocked.current) {
         canvas.requestPointerLock();
       }
@@ -358,7 +375,7 @@ function PlayerController({
       document.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("click", handleClick);
     };
-  }, [gl, onLockChange]);
+  }, [gl, onLockChange, isTouchDevice]);
 
   useFrame((_, delta) => {
     const euler = new THREE.Euler(pitch.current, yaw.current, 0, "YXZ");
@@ -380,16 +397,40 @@ function PlayerController({
       return;
     }
 
+    // 消費觸控視角累積（TouchLook 一直累加，這裡 frame-tick 套用）
+    const MAX_PITCH = 1.4;
+    const tin = touchInputRef.current;
+    if (tin.lookYaw !== 0 || tin.lookPitch !== 0) {
+      yaw.current += tin.lookYaw;
+      const nextPitch = pitch.current + tin.lookPitch;
+      pitch.current =
+        nextPitch > MAX_PITCH
+          ? MAX_PITCH
+          : nextPitch < -MAX_PITCH
+            ? -MAX_PITCH
+            : nextPitch;
+      tin.lookYaw = 0;
+      tin.lookPitch = 0;
+    }
+
     const k = keys.current;
     const sinY = Math.sin(yaw.current);
     const cosY = Math.cos(yaw.current);
 
     let mx = 0;
     let mz = 0;
+    // 鍵盤
     if (k.forward) { mx -= sinY; mz -= cosY; }
     if (k.back)    { mx += sinY; mz += cosY; }
     if (k.right)   { mx += cosY; mz -= sinY; }
     if (k.left)    { mx -= cosY; mz += sinY; }
+    // 搖桿：moveZ<0 = 上推 = 往前；moveX>0 = 右推 = 向右
+    const jx = tin.moveX;
+    const jz = tin.moveZ;
+    if (jx !== 0 || jz !== 0) {
+      mx += -jz * sinY + jx * cosY;
+      mz += -jz * cosY - jx * sinY;
+    }
 
     const len = Math.sqrt(mx * mx + mz * mz);
     if (len > 0) {
@@ -475,6 +516,8 @@ interface MazeSceneProps {
   onLockChange: (locked: boolean) => void;
   playerStateRef: React.MutableRefObject<{ gx: number; gz: number; yaw: number }>;
   exploredGridRef: React.MutableRefObject<boolean[][]>;
+  touchInputRef: React.MutableRefObject<TouchInput>;
+  isTouchDevice: boolean;
 }
 
 export const MazeScene = memo(function MazeScene({
@@ -486,6 +529,8 @@ export const MazeScene = memo(function MazeScene({
   onLockChange,
   playerStateRef,
   exploredGridRef,
+  touchInputRef,
+  isTouchDevice,
 }: MazeSceneProps) {
   const centerX = toWorld((mazeData.width - 1) / 2);
   const centerZ = toWorld((mazeData.height - 1) / 2);
@@ -559,6 +604,8 @@ export const MazeScene = memo(function MazeScene({
           playerStateRef={playerStateRef}
           exploredGridRef={exploredGridRef}
           burstRef={burstRef}
+          touchInputRef={touchInputRef}
+          isTouchDevice={isTouchDevice}
         />
 
         <ParticleBurst ref={burstRef} />

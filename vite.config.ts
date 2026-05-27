@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import { readFileSync } from "fs";
 
@@ -17,7 +18,66 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: [
+        "favicon.svg",
+        "apple-touch-icon.png",
+        "opengraph.jpg",
+        "robots.txt",
+      ],
+      manifest: {
+        name: "3D 迷宮冒險",
+        short_name: "迷宮",
+        description: "第一人稱 3D 迷宮探索遊戲（阿凱老師 / 石門國小）",
+        theme_color: "#0a0a1a",
+        background_color: "#0a0a1a",
+        display: "standalone",
+        orientation: "landscape",
+        lang: "zh-TW",
+        start_url: basePath,
+        scope: basePath,
+        icons: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+          {
+            src: "icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable",
+          },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,woff2,jpg}"],
+        // Three.js / R3F chunk 大、設長快取（hashed filename 改動就自動換）
+        runtimeCaching: [
+          {
+            urlPattern: /\/assets\/(three|r3f)-.*\.js$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "three-libs",
+              expiration: {
+                maxEntries: 8,
+                maxAgeSeconds: 60 * 60 * 24 * 60,
+              },
+            },
+          },
+          {
+            urlPattern: /\/audio\/.*\.(mp3|ogg|wav)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "audio",
+              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 60 },
+            },
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),

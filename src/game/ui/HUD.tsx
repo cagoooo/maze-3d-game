@@ -17,6 +17,7 @@ interface HUDProps {
   onPauseToggle?: () => void;
   onRestart?: () => void;
   onMapToggle?: () => void;
+  isTouch?: boolean;
 }
 
 export function HUD({
@@ -34,6 +35,7 @@ export function HUD({
   onPauseToggle,
   onRestart,
   onMapToggle,
+  isTouch = false,
 }: HUDProps) {
   const safeTime = Math.max(0, timeLeft);
   const minutes = Math.floor(safeTime / 60);
@@ -226,9 +228,10 @@ export function HUD({
       {isLocked && (
         <div style={{
           position: 'fixed',
-          bottom: '24px',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          bottom: isTouch ? '180px' : '24px',
+          left: isTouch ? 'auto' : '50%',
+          right: isTouch ? '20px' : 'auto',
+          transform: isTouch ? 'none' : 'translateX(-50%)',
           zIndex: 50,
           background: 'rgba(0,0,0,0.55)',
           border: '1px solid rgba(0,229,255,0.18)',
@@ -239,8 +242,11 @@ export function HUD({
           letterSpacing: '0.05em',
           pointerEvents: 'none',
           backdropFilter: 'blur(4px)',
+          maxWidth: '92vw',
         }}>
-          WASD / 方向鍵移動 ・ 滑鼠視角 ・ 按 [ESC] 釋放游標 ・ 按 [P] 開關地圖
+          {isTouch
+            ? '左下搖桿移動 ・ 滑動右半畫面轉視角 ・ 右上按鈕暫停 / 地圖 / 重啟'
+            : 'WASD / 方向鍵移動 ・ 滑鼠視角 ・ 按 [ESC] 釋放游標 ・ 按 [P] 開關地圖'}
         </div>
       )}
 
@@ -276,14 +282,16 @@ export function HUD({
             color: 'rgba(220,236,255,0.85)',
             marginBottom: '0.8rem',
           }}>
-            點擊畫面任意處以重新鎖定滑鼠、繼續探索
+            {isTouch
+              ? '點右上 ▶ 按鈕繼續探索'
+              : '點擊畫面任意處以重新鎖定滑鼠、繼續探索'}
           </div>
           <div style={{
             fontSize: '0.8rem',
             color: 'rgba(180,220,255,0.5)',
             letterSpacing: '0.08em',
           }}>
-            計時器與紅怪已暫停 ・ 按 [ESC] 隨時可再次離開
+            計時器與紅怪已暫停 {isTouch ? '' : '・ 按 [ESC] 隨時可再次離開'}
           </div>
         </div>
       )}
