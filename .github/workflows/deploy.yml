@@ -14,6 +14,10 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+env:
+  # Node 20 actions 在 2026-06-02 後被強制升級成 Node 24；提前 opt-in 避免突發失敗
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
