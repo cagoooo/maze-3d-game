@@ -1,3 +1,5 @@
+import { Footer } from "./Footer";
+
 interface GameOverScreenProps {
   score: number;
   collected: number;
@@ -97,6 +99,8 @@ export function GameOverScreen({ score, collected, onRestart, reason }: GameOver
       >
         重新開始
       </button>
+
+      <Footer />
     </div>
   );
 }

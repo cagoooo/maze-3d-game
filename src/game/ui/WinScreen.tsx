@@ -1,4 +1,5 @@
 import { Leaderboard } from "./Leaderboard";
+import { Footer } from "./Footer";
 import type { LeaderboardEntry } from "../leaderboard";
 
 interface WinScreenProps {
@@ -121,6 +122,8 @@ export function WinScreen({ score, timeBonus, elapsed, onRestart, leaderboard, r
       >
         再玩一次
       </button>
+
+      <Footer />
 
       <style>{`
         @keyframes pulse {

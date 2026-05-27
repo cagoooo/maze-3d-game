@@ -14,6 +14,9 @@ interface HUDProps {
   playerStateRef: React.MutableRefObject<PlayerState>;
   exploredGridRef: React.MutableRefObject<boolean[][]>;
   mapVisible: boolean;
+  onPauseToggle?: () => void;
+  onRestart?: () => void;
+  onMapToggle?: () => void;
 }
 
 export function HUD({
@@ -28,6 +31,9 @@ export function HUD({
   playerStateRef,
   exploredGridRef,
   mapVisible,
+  onPauseToggle,
+  onRestart,
+  onMapToggle,
 }: HUDProps) {
   const safeTime = Math.max(0, timeLeft);
   const minutes = Math.floor(safeTime / 60);
@@ -126,6 +132,66 @@ export function HUD({
                 <span key={i} style={{ color: i < health ? '#ff3366' : 'rgba(255,255,255,0.2)', marginLeft: '2px' }}>❤</span>
               ))}
             </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+            <button
+              data-testid="button-pause"
+              onClick={onPauseToggle}
+              title={isPaused ? '繼續（同 ESC）' : '暫停（同 ESC）'}
+              style={{
+                flex: 1,
+                background: isPaused ? 'rgba(255,170,0,0.18)' : 'rgba(0,229,255,0.15)',
+                border: `1px solid ${isPaused ? 'rgba(255,170,0,0.4)' : 'rgba(0,229,255,0.32)'}`,
+                borderRadius: '6px',
+                padding: '6px 8px',
+                color: isPaused ? '#ffaa00' : '#00e5ff',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+                fontFamily: 'inherit',
+              }}
+            >
+              {isPaused ? '▶' : '⏸'}
+            </button>
+            <button
+              data-testid="button-map-toggle"
+              onClick={onMapToggle}
+              title={mapVisible ? '隱藏小地圖（同 P）' : '顯示小地圖（同 P）'}
+              style={{
+                flex: 1,
+                background: mapVisible ? 'rgba(0,229,255,0.15)' : 'rgba(120,120,140,0.15)',
+                border: `1px solid ${mapVisible ? 'rgba(0,229,255,0.32)' : 'rgba(180,180,200,0.25)'}`,
+                borderRadius: '6px',
+                padding: '6px 8px',
+                color: mapVisible ? '#00e5ff' : 'rgba(200,210,230,0.6)',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+                fontFamily: 'inherit',
+              }}
+            >
+              🗺
+            </button>
+            <button
+              data-testid="button-restart"
+              onClick={onRestart}
+              title="重新開始整局"
+              style={{
+                flex: 1,
+                background: 'rgba(255,170,0,0.12)',
+                border: '1px solid rgba(255,170,0,0.32)',
+                borderRadius: '6px',
+                padding: '6px 8px',
+                color: '#ffaa00',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+                fontFamily: 'inherit',
+              }}
+            >
+              ↻
+            </button>
           </div>
         </div>
       </div>

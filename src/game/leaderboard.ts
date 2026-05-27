@@ -2,6 +2,8 @@ export interface LeaderboardEntry {
   score: number;
   timeLeft: number;
   date: string;
+  nickname?: string;
+  classCode?: string;
 }
 
 const STORAGE_KEY = "maze3d_leaderboard_v1";
@@ -61,5 +63,31 @@ export function formatDate(iso: string): string {
     return `${y}/${m}/${day} ${hh}:${mm}`;
   } catch {
     return iso;
+  }
+}
+
+// 玩家識別（nickname / classCode）— 與排行榜 entry 解耦，便於未來雲端化
+const NICKNAME_KEY = "maze_nickname";
+const CLASSCODE_KEY = "maze_classCode";
+
+export function loadProfile(): { nickname: string; classCode: string } {
+  if (typeof window === "undefined") return { nickname: "", classCode: "" };
+  try {
+    return {
+      nickname: window.localStorage.getItem(NICKNAME_KEY) ?? "",
+      classCode: window.localStorage.getItem(CLASSCODE_KEY) ?? "",
+    };
+  } catch {
+    return { nickname: "", classCode: "" };
+  }
+}
+
+export function saveProfile(profile: { nickname: string; classCode: string }) {
+  if (typeof window === "undefined") return;
+  try {
+    if (profile.nickname) window.localStorage.setItem(NICKNAME_KEY, profile.nickname);
+    if (profile.classCode) window.localStorage.setItem(CLASSCODE_KEY, profile.classCode);
+  } catch {
+    /* ignore */
   }
 }

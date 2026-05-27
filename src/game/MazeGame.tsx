@@ -1,7 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { generateMaze } from "./maze/MazeGenerator";
 import type { PlayerState } from "./ui/Minimap";
-import { loadLeaderboard, saveScore, type LeaderboardEntry } from "./leaderboard";
+import {
+  loadLeaderboard,
+  saveScore,
+  loadProfile,
+  type LeaderboardEntry,
+} from "./leaderboard";
 import { MazeScene } from "./MazeScene";
 import { HUD } from "./ui/HUD";
 import { StartScreen } from "./ui/StartScreen";
@@ -119,10 +124,13 @@ export function MazeGame() {
         const finalScore = totalOrbs * POINTS_PER_ORB + bonus;
         setScore((s) => s + bonus);
         if (timerRef.current) clearInterval(timerRef.current);
+        const profile = loadProfile();
         const result = saveScore({
           score: finalScore,
           timeLeft: remaining,
           date: new Date().toISOString(),
+          nickname: profile.nickname || undefined,
+          classCode: profile.classCode || undefined,
         });
         leaderboardRef.current = result.entries;
         lastRankRef.current = result.rank;
@@ -161,6 +169,19 @@ export function MazeGame() {
     setIsLocked(false);
     setGameOverReason(null);
     setGameState("playing");
+  }, []);
+
+  const handlePauseToggle = useCallback(() => {
+    if (document.pointerLockElement) {
+      document.exitPointerLock();
+    } else {
+      const canvas = document.querySelector("canvas");
+      canvas?.requestPointerLock?.();
+    }
+  }, []);
+
+  const handleMapToggle = useCallback(() => {
+    setMapVisible((v) => !v);
   }, []);
 
   if (webglSupported === null) {
@@ -206,6 +227,9 @@ export function MazeGame() {
           playerStateRef={playerStateRef}
           exploredGridRef={exploredGridRef}
           mapVisible={mapVisible}
+          onPauseToggle={handlePauseToggle}
+          onRestart={handleRestart}
+          onMapToggle={handleMapToggle}
         />
       )}
 
