@@ -2,13 +2,23 @@ import { useState, useEffect, useCallback } from "react";
 import { Leaderboard } from "./Leaderboard";
 import { Footer } from "./Footer";
 import { loadProfile, saveProfile, type LeaderboardEntry } from "../leaderboard";
+import type { Difficulty } from "../difficulty";
 
 interface StartScreenProps {
   onStart: () => void;
   leaderboard: LeaderboardEntry[];
+  difficulty: Difficulty;
+  allDifficulties: Difficulty[];
+  onDifficultyChange: (d: Difficulty) => void;
 }
 
-export function StartScreen({ onStart, leaderboard }: StartScreenProps) {
+export function StartScreen({
+  onStart,
+  leaderboard,
+  difficulty,
+  allDifficulties,
+  onDifficultyChange,
+}: StartScreenProps) {
   const initial = loadProfile();
   const [nickname, setNickname] = useState(initial.nickname);
   const [classCode, setClassCode] = useState(initial.classCode);
@@ -89,6 +99,84 @@ export function StartScreen({ onStart, leaderboard }: StartScreenProps) {
         >
           收集所有光球，躲避敵人
         </p>
+
+        {/* 難度選擇 */}
+        <div
+          style={{
+            background: "rgba(0,12,28,0.7)",
+            border: "1px solid rgba(0,229,255,0.22)",
+            borderRadius: "12px",
+            padding: "clamp(0.9rem, 2vw, 1.2rem) clamp(1rem, 2.5vw, 1.4rem)",
+            marginBottom: "clamp(0.8rem, 2.5vh, 1.3rem)",
+            width: "90%",
+            maxWidth: "340px",
+          }}
+        >
+          <div
+            style={{
+              color: "rgba(0,229,255,0.75)",
+              fontSize: "0.7rem",
+              letterSpacing: "0.18em",
+              marginBottom: "0.6rem",
+              textAlign: "center",
+            }}
+          >
+            難度
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "6px",
+            }}
+          >
+            {allDifficulties.map((d) => {
+              const active = d.id === difficulty.id;
+              return (
+                <button
+                  key={d.id}
+                  onClick={() => onDifficultyChange(d)}
+                  data-testid={`difficulty-${d.id}`}
+                  style={{
+                    background: active
+                      ? "rgba(0,229,255,0.18)"
+                      : "rgba(0,0,0,0.45)",
+                    border: `1px solid ${active ? "rgba(0,229,255,0.7)" : "rgba(0,229,255,0.15)"}`,
+                    borderRadius: "8px",
+                    padding: "8px 10px",
+                    color: active ? "#00e5ff" : "rgba(220,236,255,0.78)",
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                    fontFamily: "inherit",
+                    textAlign: "left",
+                    boxShadow: active
+                      ? "0 0 12px rgba(0,229,255,0.25)"
+                      : "none",
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                    {d.emoji} {d.label}
+                  </div>
+                  <div style={{ fontSize: "0.68rem", opacity: 0.7, marginTop: "2px" }}>
+                    {d.cols}×{d.rows} ・ {d.time}s
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <div
+            style={{
+              marginTop: "0.6rem",
+              fontSize: "0.72rem",
+              color: "rgba(180,220,255,0.55)",
+              textAlign: "center",
+              lineHeight: 1.5,
+            }}
+            data-testid="difficulty-desc"
+          >
+            {difficulty.description}
+          </div>
+        </div>
 
         {/* 玩家資料：暱稱 + 班級代碼 */}
         <div

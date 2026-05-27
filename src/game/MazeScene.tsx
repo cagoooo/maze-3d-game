@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo, useCallback, memo } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { MazeData } from "./maze/MazeGenerator";
+import { MazeData, type ItemType } from "./maze/MazeGenerator";
 import { ParticleBurst, type ParticleBurstHandle } from "./ParticleBurst";
 
 const CELL_SIZE = 4;
@@ -161,24 +161,151 @@ const Orb = memo(function Orb({ position, index, collectedRef }: {
   );
 });
 
+const ITEM_VISUAL: Record<
+  ItemType,
+  { color: string; emissive: string; shape: "box" | "tetra" | "octa" | "sphere" }
+> = {
+  heart: { color: "#ff4477", emissive: "#aa1144", shape: "box" },
+  time: { color: "#88ddff", emissive: "#3399cc", shape: "octa" },
+  stealth: { color: "#cccccc", emissive: "#888888", shape: "sphere" },
+  map: { color: "#ffcc55", emissive: "#cc8800", shape: "tetra" },
+  speed: { color: "#ffee44", emissive: "#aa8800", shape: "octa" },
+};
+
+const Item = memo(function Item({
+  position,
+  index,
+  type,
+  collectedRef,
+}: {
+  position: [number, number, number];
+  index: number;
+  type: ItemType;
+  collectedRef: React.MutableRefObject<boolean[]>;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const t = useRef(index * 0.4 + Math.PI / 3);
+
+  const visual = ITEM_VISUAL[type];
+
+  useFrame((_, delta) => {
+    const isCollected = collectedRef.current[index];
+    if (groupRef.current && groupRef.current.visible === isCollected) {
+      groupRef.current.visible = !isCollected;
+    }
+    if (isCollected) return;
+    t.current += delta;
+    if (meshRef.current) {
+      meshRef.current.position.y =
+        position[1] + Math.sin(t.current * 2) * 0.14 + 0.45;
+      meshRef.current.rotation.y += delta * 1.5;
+      meshRef.current.rotation.x += delta * 0.6;
+    }
+    if (lightRef.current) {
+      lightRef.current.intensity = 0.9 + Math.sin(t.current * 5) * 0.25;
+    }
+  });
+
+  const geometry = (() => {
+    switch (visual.shape) {
+      case "box":
+        return <boxGeometry args={[0.28, 0.28, 0.28]} />;
+      case "tetra":
+        return <tetrahedronGeometry args={[0.28, 0]} />;
+      case "octa":
+        return <octahedronGeometry args={[0.28, 0]} />;
+      case "sphere":
+        return <sphereGeometry args={[0.24, 16, 12]} />;
+    }
+  })();
+
+  return (
+    <group ref={groupRef}>
+      <mesh ref={meshRef} position={position}>
+        {geometry}
+        <meshStandardMaterial
+          color={visual.color}
+          emissive={visual.emissive}
+          emissiveIntensity={2.5}
+          roughness={0.15}
+          metalness={0.7}
+          transparent
+          opacity={type === "stealth" ? 0.55 : 0.95}
+        />
+      </mesh>
+      <pointLight
+        ref={lightRef}
+        position={position}
+        color={visual.color}
+        intensity={0.9}
+        distance={4}
+      />
+    </group>
+  );
+});
+
+/**
+ * 直線視線檢查：Bresenham 風格采樣，遇到牆 (grid[z][x]===1) 就回 false。
+ * 從敵人位置採樣到玩家位置，每 0.25 公尺取一點。
+ */
+function hasLineOfSight(
+  grid: number[][],
+  from: THREE.Vector3,
+  to: THREE.Vector3,
+): boolean {
+  const dx = to.x - from.x;
+  const dz = to.z - from.z;
+  const dist = Math.sqrt(dx * dx + dz * dz);
+  if (dist > 12) return false; // 太遠看不到
+  const steps = Math.max(2, Math.ceil(dist / 0.25));
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const x = from.x + dx * t;
+    const z = from.z + dz * t;
+    const gx = Math.round(x / WALL_UNIT);
+    const gz = Math.round(z / WALL_UNIT);
+    if (grid[gz]?.[gx] === 1) return false;
+  }
+  return true;
+}
+
+const CHASE_DURATION_MS = 3000;
+const CHASE_SPEED = 3.4;
+const PATROL_SPEED = 2.5;
+const LOS_CHECK_INTERVAL = 0.4;
+
 function Enemy({
   path,
   playerPos,
   onDamage,
   gameActive,
+  grid,
+  chaseEnabled,
+  stealthActive,
 }: {
   path: { x: number; z: number }[];
   playerPos: React.MutableRefObject<THREE.Vector3>;
   onDamage: () => void;
   gameActive: boolean;
+  grid: number[][];
+  chaseEnabled: boolean;
+  stealthActive: boolean;
 }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
-  const posRef = useRef(new THREE.Vector3(toWorld(path[0].x), 0.5, toWorld(path[0].z)));
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
+  const glowMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const posRef = useRef(
+    new THREE.Vector3(toWorld(path[0].x), 0.5, toWorld(path[0].z)),
+  );
   const targetIdx = useRef(0);
   const direction = useRef(1);
   const damageCooldown = useRef(2);
   const t = useRef(Math.random() * Math.PI * 2);
+  const losTimer = useRef(0);
+  const chaseUntil = useRef(0);
 
   useFrame((_, delta) => {
     if (!gameActive) {
@@ -189,9 +316,42 @@ function Enemy({
     t.current += delta;
     damageCooldown.current = Math.max(0, damageCooldown.current - delta);
 
-    if (path.length >= 2) {
+    // 視線追蹤偵測（每 LOS_CHECK_INTERVAL 秒）
+    if (chaseEnabled && !stealthActive) {
+      losTimer.current -= delta;
+      if (losTimer.current <= 0) {
+        losTimer.current = LOS_CHECK_INTERVAL;
+        if (hasLineOfSight(grid, posRef.current, playerPos.current)) {
+          chaseUntil.current = Date.now() + CHASE_DURATION_MS;
+        }
+      }
+    }
+    const isChasing =
+      chaseEnabled && !stealthActive && Date.now() < chaseUntil.current;
+
+    if (isChasing) {
+      // 朝玩家直線追擊
+      const dir = playerPos.current.clone().sub(posRef.current);
+      dir.y = 0;
+      const dist = dir.length();
+      if (dist > 0.1) {
+        dir.normalize().multiplyScalar(CHASE_SPEED * delta);
+        // 簡易牆面避撞：分軸測試
+        const nx = posRef.current.x + dir.x;
+        const nz = posRef.current.z + dir.z;
+        if (!checkWallCollision(grid, nx, posRef.current.z, 0.35))
+          posRef.current.x = nx;
+        if (!checkWallCollision(grid, posRef.current.x, nz, 0.35))
+          posRef.current.z = nz;
+      }
+    } else if (path.length >= 2) {
+      // 巡邏模式（原本邏輯）
       const target = path[targetIdx.current];
-      const targetPos = new THREE.Vector3(toWorld(target.x), 0.5, toWorld(target.z));
+      const targetPos = new THREE.Vector3(
+        toWorld(target.x),
+        0.5,
+        toWorld(target.z),
+      );
       const dir = targetPos.clone().sub(posRef.current);
       const dist = dir.length();
 
@@ -205,7 +365,7 @@ function Enemy({
           targetIdx.current = 0;
         }
       } else {
-        dir.normalize().multiplyScalar(2.5 * delta);
+        dir.normalize().multiplyScalar(PATROL_SPEED * delta);
         posRef.current.add(dir);
       }
     }
@@ -217,9 +377,21 @@ function Enemy({
     if (glowRef.current) {
       glowRef.current.position.copy(posRef.current);
       glowRef.current.position.y = 0.5;
-      const s = 1 + Math.sin(t.current * 3) * 0.15;
+      const s = (isChasing ? 1.15 : 1) + Math.sin(t.current * 3) * 0.15;
       glowRef.current.scale.set(s, s, s);
     }
+
+    // 追擊時材質變更紅
+    if (matRef.current) {
+      matRef.current.emissiveIntensity = isChasing ? 1.6 : 0.8;
+    }
+    if (glowMatRef.current) {
+      glowMatRef.current.emissiveIntensity = isChasing ? 2.4 : 1.5;
+      glowMatRef.current.opacity = isChasing ? 0.32 : 0.18;
+    }
+
+    // 隱身道具生效時跳過傷害
+    if (stealthActive) return;
 
     const toPlayer = playerPos.current.clone().sub(posRef.current);
     toPlayer.y = 0;
@@ -233,11 +405,26 @@ function Enemy({
     <group>
       <mesh ref={meshRef} castShadow>
         <boxGeometry args={[0.55, 1.1, 0.55]} />
-        <meshStandardMaterial color="#cc0033" emissive="#880022" emissiveIntensity={0.8} roughness={0.3} metalness={0.6} />
+        <meshStandardMaterial
+          ref={matRef}
+          color="#cc0033"
+          emissive="#ff1144"
+          emissiveIntensity={0.8}
+          roughness={0.3}
+          metalness={0.6}
+        />
       </mesh>
       <mesh ref={glowRef}>
         <sphereGeometry args={[0.55, 8, 8]} />
-        <meshStandardMaterial color="#ff0044" emissive="#ff0044" emissiveIntensity={1.5} transparent opacity={0.18} roughness={1} />
+        <meshStandardMaterial
+          ref={glowMatRef}
+          color="#ff0044"
+          emissive="#ff0044"
+          emissiveIntensity={1.5}
+          transparent
+          opacity={0.18}
+          roughness={1}
+        />
       </mesh>
     </group>
   );
@@ -259,6 +446,7 @@ function PlayerController({
   orbPositions,
   collectedRef,
   onOrbCollect,
+  onItem,
   onDamage,
   enemyPaths,
   onLockChange,
@@ -268,11 +456,16 @@ function PlayerController({
   burstRef,
   touchInputRef,
   isTouchDevice,
+  itemsCollectedRef,
+  playerSpeedMultiplier,
+  stealthActive,
+  enemyChase,
 }: {
   mazeData: MazeData;
   orbPositions: { x: number; z: number }[];
   collectedRef: React.MutableRefObject<boolean[]>;
   onOrbCollect: (i: number) => void;
+  onItem: (type: ItemType) => void;
   onDamage: () => void;
   enemyPaths: { x: number; z: number }[][];
   onLockChange: (locked: boolean) => void;
@@ -282,6 +475,10 @@ function PlayerController({
   burstRef: React.MutableRefObject<ParticleBurstHandle | null>;
   touchInputRef: React.MutableRefObject<TouchInput>;
   isTouchDevice: boolean;
+  itemsCollectedRef: React.MutableRefObject<boolean[]>;
+  playerSpeedMultiplier: number;
+  stealthActive: boolean;
+  enemyChase: boolean;
 }) {
   const { camera, gl } = useThree();
   const playerPos = useRef(
@@ -434,7 +631,7 @@ function PlayerController({
 
     const len = Math.sqrt(mx * mx + mz * mz);
     if (len > 0) {
-      const speed = PLAYER_SPEED * delta;
+      const speed = PLAYER_SPEED * playerSpeedMultiplier * delta;
       const normX = mx / len;
       const normZ = mz / len;
       const nx = playerPos.current.x + normX * speed;
@@ -486,6 +683,21 @@ function PlayerController({
         onOrbCollect(i);
       }
     });
+
+    // 道具碰撞
+    const itemsCollected = itemsCollectedRef.current;
+    mazeData.items.forEach((item, i) => {
+      if (itemsCollected[i]) return;
+      const wx = toWorld(item.x);
+      const wz = toWorld(item.z);
+      const dx = playerPos.current.x - wx;
+      const dz = playerPos.current.z - wz;
+      if (dx * dx + dz * dz < ORB_COLLECT_DIST * ORB_COLLECT_DIST) {
+        itemsCollected[i] = true;
+        burstRef.current?.spawn(wx, 0.6, wz);
+        onItem(item.type);
+      }
+    });
   });
 
   return (
@@ -501,7 +713,16 @@ function PlayerController({
       />
       <pointLight ref={torchFillRef} color="#ffd9a0" intensity={2.2} distance={6} decay={2} />
       {enemyPaths.map((path, i) => (
-        <Enemy key={i} path={path} playerPos={playerPos} onDamage={onDamage} gameActive={gameActive} />
+        <Enemy
+          key={i}
+          path={path}
+          playerPos={playerPos}
+          onDamage={onDamage}
+          gameActive={gameActive}
+          grid={mazeData.grid}
+          chaseEnabled={enemyChase}
+          stealthActive={stealthActive}
+        />
       ))}
     </>
   );
@@ -511,26 +732,36 @@ interface MazeSceneProps {
   mazeData: MazeData;
   gameActive: boolean;
   onOrbCollect: (i: number) => void;
+  onItem: (type: ItemType) => void;
   onDamage: () => void;
   collectedRef: React.MutableRefObject<boolean[]>;
+  itemsCollectedRef: React.MutableRefObject<boolean[]>;
   onLockChange: (locked: boolean) => void;
   playerStateRef: React.MutableRefObject<{ gx: number; gz: number; yaw: number }>;
   exploredGridRef: React.MutableRefObject<boolean[][]>;
   touchInputRef: React.MutableRefObject<TouchInput>;
   isTouchDevice: boolean;
+  playerSpeedMultiplier: number;
+  stealthActive: boolean;
+  enemyChase: boolean;
 }
 
 export const MazeScene = memo(function MazeScene({
   mazeData,
   gameActive,
   onOrbCollect,
+  onItem,
   onDamage,
   collectedRef,
+  itemsCollectedRef,
   onLockChange,
   playerStateRef,
   exploredGridRef,
   touchInputRef,
   isTouchDevice,
+  playerSpeedMultiplier,
+  stealthActive,
+  enemyChase,
 }: MazeSceneProps) {
   const centerX = toWorld((mazeData.width - 1) / 2);
   const centerZ = toWorld((mazeData.height - 1) / 2);
@@ -592,11 +823,23 @@ export const MazeScene = memo(function MazeScene({
           />
         ))}
 
+        {mazeData.items.map((item, i) => (
+          <Item
+            key={`item-${i}`}
+            index={i}
+            type={item.type}
+            position={[toWorld(item.x), 0.55, toWorld(item.z)]}
+            collectedRef={itemsCollectedRef}
+          />
+        ))}
+
         <PlayerController
           mazeData={mazeData}
           orbPositions={mazeData.orbPositions}
           collectedRef={collectedRef}
+          itemsCollectedRef={itemsCollectedRef}
           onOrbCollect={onOrbCollect}
+          onItem={onItem}
           onDamage={onDamage}
           enemyPaths={mazeData.enemyPaths}
           onLockChange={onLockChange}
@@ -606,6 +849,9 @@ export const MazeScene = memo(function MazeScene({
           burstRef={burstRef}
           touchInputRef={touchInputRef}
           isTouchDevice={isTouchDevice}
+          playerSpeedMultiplier={playerSpeedMultiplier}
+          stealthActive={stealthActive}
+          enemyChase={enemyChase}
         />
 
         <ParticleBurst ref={burstRef} />

@@ -18,6 +18,7 @@ export function WinScreen({ score, timeBonus, elapsed, onRestart, leaderboard, r
 
   return (
     <div
+      className="maze-overlay-in"
       style={{
         position: 'fixed',
         inset: 0,
@@ -29,13 +30,16 @@ export function WinScreen({ score, timeBonus, elapsed, onRestart, leaderboard, r
         zIndex: 100,
         backdropFilter: 'blur(8px)',
         userSelect: 'none',
+        overflowY: 'auto',
       }}
     >
-      <div style={{
-        fontSize: '3.5rem',
-        marginBottom: '0.5rem',
-        animation: 'pulse 1.5s ease-in-out infinite',
-      }}>
+      <div
+        className="maze-win-badge"
+        style={{
+          fontSize: '3.5rem',
+          marginBottom: '0.5rem',
+        }}
+      >
         🏆
       </div>
 
@@ -77,7 +81,13 @@ export function WinScreen({ score, timeBonus, elapsed, onRestart, leaderboard, r
           </div>
           <div style={{ borderTop: '1px solid rgba(255,215,0,0.2)', paddingTop: '0.6rem', marginTop: '0.2rem' }}>
             <div style={{ color: 'rgba(255,220,100,0.7)', fontSize: '0.85rem', marginBottom: '0.2rem' }}>總得分</div>
-            <div style={{ color: '#ffd700', fontSize: '2.5rem', fontWeight: 900 }} data-testid="text-win-score">{score}</div>
+            <div
+              className="maze-score-pop"
+              style={{ color: '#ffd700', fontSize: '2.5rem', fontWeight: 900 }}
+              data-testid="text-win-score"
+            >
+              {score}
+            </div>
           </div>
         </div>
       </div>

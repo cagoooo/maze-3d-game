@@ -17,3 +17,59 @@ html, body, #root {
 canvas {
   display: block;
 }
+
+/* === 過場動畫（C6） === */
+@keyframes mazeOverlayIn {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes mazeScorePop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes mazeWinBadgePulse {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.2) rotate(-7deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(0deg);
+  }
+  75% {
+    transform: scale(1.2) rotate(7deg);
+  }
+}
+
+.maze-overlay-in {
+  animation: mazeOverlayIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.maze-score-pop {
+  display: inline-block;
+  animation: mazeScorePop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s both;
+}
+
+.maze-win-badge {
+  display: inline-block;
+  animation: mazeWinBadgePulse 1.8s ease-in-out infinite;
+}

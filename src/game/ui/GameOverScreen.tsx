@@ -29,6 +29,7 @@ export function GameOverScreen({ score, collected, onRestart, reason }: GameOver
 
   return (
     <div
+      className="maze-overlay-in"
       style={{
         position: 'fixed',
         inset: 0,
@@ -40,6 +41,7 @@ export function GameOverScreen({ score, collected, onRestart, reason }: GameOver
         zIndex: 100,
         backdropFilter: 'blur(8px)',
         userSelect: 'none',
+        overflowY: 'auto',
       }}
     >
       <h1
@@ -72,7 +74,13 @@ export function GameOverScreen({ score, collected, onRestart, reason }: GameOver
         minWidth: '240px',
       }}>
         <div style={{ color: panelLabel, fontSize: '0.9rem', marginBottom: '0.5rem' }}>本局得分</div>
-        <div style={{ color: accent, fontSize: '2.5rem', fontWeight: 900 }} data-testid="text-final-score">{score}</div>
+        <div
+          className="maze-score-pop"
+          style={{ color: accent, fontSize: '2.5rem', fontWeight: 900 }}
+          data-testid="text-final-score"
+        >
+          {score}
+        </div>
         <div style={{ color: panelHint, fontSize: '0.85rem', marginTop: '0.5rem' }}>
           已收集光球：{collected}
         </div>

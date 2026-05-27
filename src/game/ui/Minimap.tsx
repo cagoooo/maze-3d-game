@@ -11,11 +11,18 @@ interface MinimapProps {
   mazeData: MazeData;
   playerStateRef: React.MutableRefObject<PlayerState>;
   exploredGridRef: React.MutableRefObject<boolean[][]>;
+  /** 道具 map 啟動時忽略 explored 限制 */
+  revealAll?: boolean;
 }
 
 const CELL_PX = 14;
 
-export function Minimap({ mazeData, playerStateRef, exploredGridRef }: MinimapProps) {
+export function Minimap({
+  mazeData,
+  playerStateRef,
+  exploredGridRef,
+  revealAll = false,
+}: MinimapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -44,11 +51,17 @@ export function Minimap({ mazeData, playerStateRef, exploredGridRef }: MinimapPr
       const explored = exploredGridRef.current;
       for (let z = 0; z < H; z++) {
         const row = explored[z];
-        if (!row) continue;
         for (let x = 0; x < W; x++) {
-          if (!row[x]) continue;
+          const isExplored = revealAll || row?.[x];
+          if (!isExplored) continue;
           const isWall = mazeData.grid[z]?.[x] === 1;
-          ctx.fillStyle = isWall ? "#2b3a5c" : "rgba(220,236,255,0.85)";
+          ctx.fillStyle = isWall
+            ? revealAll
+              ? "#3a4a72"
+              : "#2b3a5c"
+            : revealAll
+              ? "rgba(255,204,85,0.65)"
+              : "rgba(220,236,255,0.85)";
           ctx.fillRect(x * CELL_PX, z * CELL_PX, CELL_PX, CELL_PX);
         }
       }
@@ -81,7 +94,7 @@ export function Minimap({ mazeData, playerStateRef, exploredGridRef }: MinimapPr
 
     draw();
     return () => cancelAnimationFrame(rafId);
-  }, [mazeData, playerStateRef, exploredGridRef]);
+  }, [mazeData, playerStateRef, exploredGridRef, revealAll]);
 
   return (
     <div

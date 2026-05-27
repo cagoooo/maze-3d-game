@@ -17,7 +17,15 @@ interface HUDProps {
   onPauseToggle?: () => void;
   onRestart?: () => void;
   onMapToggle?: () => void;
+  onMuteToggle?: () => void;
+  muted?: boolean;
   isTouch?: boolean;
+  /** 道具 map 啟動時顯示整張迷宮 */
+  showFullMap?: boolean;
+  /** 道具 stealth 剩餘 ms */
+  stealthRemaining?: number;
+  /** 道具 speed 剩餘 ms */
+  speedRemaining?: number;
 }
 
 export function HUD({
@@ -35,7 +43,12 @@ export function HUD({
   onPauseToggle,
   onRestart,
   onMapToggle,
+  onMuteToggle,
+  muted = false,
   isTouch = false,
+  showFullMap = false,
+  stealthRemaining = 0,
+  speedRemaining = 0,
 }: HUDProps) {
   const safeTime = Math.max(0, timeLeft);
   const minutes = Math.floor(safeTime / 60);
@@ -194,6 +207,25 @@ export function HUD({
             >
               ↻
             </button>
+            <button
+              data-testid="button-mute"
+              onClick={onMuteToggle}
+              title={muted ? '取消靜音' : '靜音'}
+              style={{
+                flex: 1,
+                background: muted ? 'rgba(120,120,140,0.15)' : 'rgba(0,229,255,0.15)',
+                border: `1px solid ${muted ? 'rgba(180,180,200,0.25)' : 'rgba(0,229,255,0.32)'}`,
+                borderRadius: '6px',
+                padding: '6px 8px',
+                color: muted ? 'rgba(200,210,230,0.6)' : '#00e5ff',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                pointerEvents: 'auto',
+                fontFamily: 'inherit',
+              }}
+            >
+              {muted ? '🔇' : '🔊'}
+            </button>
           </div>
         </div>
       </div>
@@ -220,7 +252,74 @@ export function HUD({
           mazeData={mazeData}
           playerStateRef={playerStateRef}
           exploredGridRef={exploredGridRef}
+          revealAll={showFullMap}
         />
+      )}
+
+      {/* 活躍道具效果列（左下角靠地圖上方）*/}
+      {(stealthRemaining > 0 || speedRemaining > 0 || showFullMap) && (
+        <div
+          data-testid="active-effects"
+          style={{
+            position: 'fixed',
+            top: '120px',
+            left: '20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            zIndex: 55,
+            pointerEvents: 'none',
+          }}
+        >
+          {stealthRemaining > 0 && (
+            <div
+              style={{
+                background: 'rgba(40,40,50,0.85)',
+                border: '1px solid rgba(200,200,210,0.5)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                color: '#cccccc',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              👻 隱身 {(stealthRemaining / 1000).toFixed(1)}s
+            </div>
+          )}
+          {speedRemaining > 0 && (
+            <div
+              style={{
+                background: 'rgba(50,50,0,0.85)',
+                border: '1px solid rgba(255,238,68,0.5)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                color: '#ffee44',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              ⚡ 加速 {(speedRemaining / 1000).toFixed(1)}s
+            </div>
+          )}
+          {showFullMap && (
+            <div
+              style={{
+                background: 'rgba(50,30,0,0.85)',
+                border: '1px solid rgba(255,204,85,0.5)',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                color: '#ffcc55',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              🗺 全圖 {showFullMap ? '顯示中' : ''}
+            </div>
+          )}
+        </div>
       )}
 
       <DamageOverlay health={health} maxHealth={3} />

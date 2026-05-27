@@ -1,3 +1,11 @@
+export type ItemType = "heart" | "time" | "stealth" | "map" | "speed";
+
+export interface ItemPlacement {
+  x: number;
+  z: number;
+  type: ItemType;
+}
+
 export interface MazeData {
   grid: number[][];
   width: number;
@@ -6,7 +14,25 @@ export interface MazeData {
   startZ: number;
   orbPositions: { x: number; z: number }[];
   enemyPaths: { x: number; z: number }[][];
+  items: ItemPlacement[];
 }
+
+export interface MazeGenOptions {
+  /** 上限光球數；不足會依迷宮大小自動取較少者 */
+  orbCount?: number;
+  /** 敵人巡邏路徑數 */
+  enemyCount?: number;
+  /** 道具數（隨機 5 種混合） */
+  itemCount?: number;
+}
+
+const DEFAULT_ITEM_POOL: ItemType[] = [
+  "heart",
+  "time",
+  "stealth",
+  "map",
+  "speed",
+];
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -17,12 +43,18 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export function generateMaze(cols: number, rows: number): MazeData {
+export function generateMaze(
+  cols: number,
+  rows: number,
+  options: MazeGenOptions = {},
+): MazeData {
   const W = cols * 2 + 1;
   const H = rows * 2 + 1;
   const grid: number[][] = Array.from({ length: H }, () => Array(W).fill(1));
 
-  const visited: boolean[][] = Array.from({ length: rows }, () => Array(cols).fill(false));
+  const visited: boolean[][] = Array.from({ length: rows }, () =>
+    Array(cols).fill(false),
+  );
 
   function cellToGrid(cx: number, cy: number) {
     return { gx: cx * 2 + 1, gy: cy * 2 + 1 };
@@ -34,7 +66,10 @@ export function generateMaze(cols: number, rows: number): MazeData {
     grid[gy][gx] = 0;
 
     const dirs = shuffle([
-      [0, -1], [0, 1], [-1, 0], [1, 0],
+      [0, -1],
+      [0, 1],
+      [-1, 0],
+      [1, 0],
     ]);
 
     for (const [dx, dy] of dirs) {
@@ -62,18 +97,28 @@ export function generateMaze(cols: number, rows: number): MazeData {
   }
 
   const shuffledCells = shuffle(openCells);
-  const orbCount = Math.min(12, Math.floor(openCells.length * 0.3));
-  const orbPositions = shuffledCells.slice(0, orbCount);
+  const targetOrb = options.orbCount ?? 12;
+  const orbCnt = Math.min(targetOrb, Math.floor(openCells.length * 0.3));
+  const orbPositions = shuffledCells.slice(0, orbCnt);
 
-  const enemyCells = shuffledCells.slice(orbCount, orbCount + 4);
+  const enemyTarget = options.enemyCount ?? 4;
+  const enemyCells = shuffledCells.slice(orbCnt, orbCnt + enemyTarget);
   const enemyPaths: { x: number; z: number }[][] = enemyCells.map((cell) => {
     const neighbors: { x: number; z: number }[] = [];
-    const dirs = [[2, 0], [-2, 0], [0, 2], [0, -2]];
+    const dirs = [
+      [2, 0],
+      [-2, 0],
+      [0, 2],
+      [0, -2],
+    ];
     for (const [dx, dz] of dirs) {
       const nx = cell.x + dx;
       const nz = cell.z + dz;
       if (
-        nx > 0 && nx < W - 1 && nz > 0 && nz < H - 1 &&
+        nx > 0 &&
+        nx < W - 1 &&
+        nz > 0 &&
+        nz < H - 1 &&
         grid[nz][nx] === 0
       ) {
         neighbors.push({ x: nx, z: nz });
@@ -84,6 +129,17 @@ export function generateMaze(cols: number, rows: number): MazeData {
     return [cell, picked];
   });
 
+  // 道具放在 enemy 之後的空格
+  const itemTarget = options.itemCount ?? 3;
+  const itemCells = shuffledCells.slice(
+    orbCnt + enemyTarget,
+    orbCnt + enemyTarget + itemTarget,
+  );
+  const items: ItemPlacement[] = itemCells.map((c) => ({
+    ...c,
+    type: DEFAULT_ITEM_POOL[Math.floor(Math.random() * DEFAULT_ITEM_POOL.length)],
+  }));
+
   return {
     grid,
     width: W,
@@ -92,5 +148,6 @@ export function generateMaze(cols: number, rows: number): MazeData {
     startZ: 1,
     orbPositions,
     enemyPaths,
+    items,
   };
 }

@@ -4,15 +4,44 @@ export interface LeaderboardEntry {
   date: string;
   nickname?: string;
   classCode?: string;
+  difficulty?: string;
 }
 
-const STORAGE_KEY = "maze3d_leaderboard_v1";
+// v2：依難度分流；v1（舊）合存當時所有紀錄，遷移到 normal
+const STORAGE_KEY = (diff: string) => `maze3d_leaderboard_v2_${diff}`;
+const LEGACY_KEY = "maze3d_leaderboard_v1";
 const MAX_ENTRIES = 3;
 
-export function loadLeaderboard(): LeaderboardEntry[] {
-  if (typeof window === "undefined") return [];
+function migrateLegacy() {
+  if (typeof window === "undefined") return;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const legacy = window.localStorage.getItem(LEGACY_KEY);
+    if (!legacy) return;
+    const parsed = JSON.parse(legacy);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      window.localStorage.removeItem(LEGACY_KEY);
+      return;
+    }
+    // 舊紀錄都來自 normal 難度（9×9 / 150s）
+    const normalKey = STORAGE_KEY("normal");
+    const existing = window.localStorage.getItem(normalKey);
+    if (!existing) {
+      window.localStorage.setItem(
+        normalKey,
+        JSON.stringify(parsed.map((e) => ({ ...e, difficulty: "normal" }))),
+      );
+    }
+    window.localStorage.removeItem(LEGACY_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadLeaderboard(difficulty = "normal"): LeaderboardEntry[] {
+  if (typeof window === "undefined") return [];
+  migrateLegacy();
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY(difficulty));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -37,13 +66,17 @@ export interface SaveResult {
 }
 
 export function saveScore(entry: LeaderboardEntry): SaveResult {
-  const current = loadLeaderboard();
+  const difficulty = entry.difficulty ?? "normal";
+  const current = loadLeaderboard(difficulty);
   const combined = [...current, entry].sort((a, b) => b.score - a.score);
   const trimmed = combined.slice(0, MAX_ENTRIES);
   const rankIdx = trimmed.indexOf(entry);
   try {
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+      window.localStorage.setItem(
+        STORAGE_KEY(difficulty),
+        JSON.stringify(trimmed),
+      );
     }
   } catch {
     /* ignore quota errors */
