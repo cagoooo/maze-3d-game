@@ -44,6 +44,11 @@ jobs:
         run: npm run build
         env:
           BASE_PATH: /maze-3d-game/
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_REGION: ${{ secrets.VITE_FIREBASE_REGION }}
+          VITE_TURNSTILE_SITE_KEY: ${{ secrets.VITE_TURNSTILE_SITE_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
