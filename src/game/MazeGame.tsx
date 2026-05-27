@@ -4,7 +4,9 @@ import type { ItemType } from "./maze/MazeGenerator";
 import type { PlayerState } from "./ui/Minimap";
 import {
   loadLeaderboard,
+  loadLeaderboardSync,
   saveScore,
+  submitToCloud,
   loadProfile,
   type LeaderboardEntry,
 } from "./leaderboard";
@@ -32,6 +34,9 @@ import {
   isMuted,
   toggleMute,
 } from "./audio";
+import { parseUrlParams, applyUrlParams } from "./urlParams";
+import { getTurnstileToken, turnstileEnabled } from "./turnstile";
+import { cloudEnabled } from "./firebaseClient";
 
 type GameState = "start" | "playing" | "gameover" | "win";
 type GameOverReason = "timeout" | "enemy" | null;
@@ -44,22 +49,33 @@ const SPEED_MS = 10000;
 const MAP_REVEAL_MS = 5000;
 const TIME_BONUS_ITEM_SEC = 20;
 
-function makeMaze(d: Difficulty) {
+function makeMaze(d: Difficulty, seed?: string) {
   return generateMaze(d.cols, d.rows, {
     orbCount: d.orbCount,
     enemyCount: d.enemyCount,
     itemCount: 3,
+    seed,
   });
 }
 
 export function MazeGame() {
   const webglSupported = useWebGLSupport();
   const platform = usePlatform();
-  const [difficulty, setDifficultyState] = useState<Difficulty>(() =>
-    loadDifficulty(),
+  // URL params 在最一開始解析（before state init）並套用到 storage，確保 difficulty 等 state 拿到正確值
+  const urlParamsRef = useRef(parseUrlParams());
+  useEffect(() => {
+    applyUrlParams(urlParamsRef.current);
+  }, []);
+  const [sharedSeed, setSharedSeed] = useState<string | undefined>(
+    urlParamsRef.current.seed,
+  );
+  const [difficulty, setDifficultyState] = useState<Difficulty>(
+    () => urlParamsRef.current.difficulty ?? loadDifficulty(),
   );
   const [gameState, setGameState] = useState<GameState>("start");
-  const [currentMaze, setCurrentMaze] = useState(() => makeMaze(difficulty));
+  const [currentMaze, setCurrentMaze] = useState(() =>
+    makeMaze(difficulty, urlParamsRef.current.seed),
+  );
   const [mazeId, setMazeId] = useState(0);
   const totalOrbs = currentMaze.orbPositions.length;
   const collectedRef = useRef<boolean[]>(new Array(totalOrbs).fill(false));
@@ -95,7 +111,7 @@ export function MazeGame() {
     ),
   );
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(() =>
-    loadLeaderboard(difficulty.id),
+    loadLeaderboardSync(difficulty.id),
   );
   const [lastRank, setLastRank] = useState<number | null>(null);
   const [mapVisible, setMapVisible] = useState(true);
@@ -137,11 +153,20 @@ export function MazeGame() {
     );
   }, [currentMaze]);
 
-  // 切換難度時重載對應排行榜
+  // 切換難度時重載對應排行榜（先顯示本機立即可見，再 async 拉雲端）
   useEffect(() => {
-    setLeaderboard(loadLeaderboard(difficulty.id));
+    setLeaderboard(loadLeaderboardSync(difficulty.id));
     setLastRank(null);
-  }, [difficulty.id]);
+    const profile = loadProfile();
+    loadLeaderboard(difficulty.id, {
+      classCode: profile.classCode || undefined,
+      seed: sharedSeed,
+    })
+      .then((entries) => {
+        if (entries.length > 0) setLeaderboard(entries);
+      })
+      .catch(() => {});
+  }, [difficulty.id, sharedSeed]);
 
   useEffect(() => {
     if (gameState !== "playing" || !effectiveLocked) {
@@ -174,7 +199,8 @@ export function MazeGame() {
     playBgm();
     setBgmVolume(0.22);
     // 按當前難度重建一張新迷宮（讓使用者在 start 畫面切難度後直接套用）
-    const fresh = makeMaze(difficulty);
+    // 帶 sharedSeed 可在班級共享模式下保持同一張迷宮
+    const fresh = makeMaze(difficulty, sharedSeed);
     collectedRef.current = new Array(fresh.orbPositions.length).fill(false);
     itemsCollectedRef.current = new Array(fresh.items.length).fill(false);
     timeLeftRef.current = difficulty.time;
@@ -205,7 +231,7 @@ export function MazeGame() {
       const req = elem.requestFullscreen ?? elem.webkitRequestFullscreen;
       req?.call(elem).catch(() => {});
     }
-  }, [platform.isTouch, difficulty]);
+  }, [platform.isTouch, difficulty, sharedSeed]);
 
   const handleOrbCollect = useCallback(
     (idx: number) => {
@@ -224,22 +250,49 @@ export function MazeGame() {
         setScore((s) => s + bonus);
         if (timerRef.current) clearInterval(timerRef.current);
         const profile = loadProfile();
-        const result = saveScore({
+        const entryBase = {
           score: finalScore,
           timeLeft: remaining,
           date: new Date().toISOString(),
           nickname: profile.nickname || undefined,
           classCode: profile.classCode || undefined,
           difficulty: difficulty.id,
-        });
+          seed: sharedSeed,
+        };
+        // 1. 先寫本機 + 顯示
+        const result = saveScore(entryBase);
         setLeaderboard(result.entries);
         setLastRank(result.rank);
+        // 2. 非同步取 Turnstile token 後寫雲端（失敗則入 offline queue）
+        if (cloudEnabled) {
+          (async () => {
+            let token = "";
+            if (turnstileEnabled) {
+              try {
+                token = await getTurnstileToken();
+              } catch (err) {
+                console.warn("[Turnstile] token fetch failed:", err);
+              }
+            }
+            await submitToCloud(entryBase, { turnstileToken: token });
+            // 3. refresh leaderboard 含其他玩家紀錄
+            try {
+              const entries = await loadLeaderboard(difficulty.id, {
+                classCode: profile.classCode || undefined,
+                seed: sharedSeed,
+              });
+              if (entries.length > 0) setLeaderboard(entries);
+            } catch {
+              /* ignore */
+            }
+          })();
+        }
         playSfx("win");
         setBgmVolume(0.08);
         setTimeout(() => setGameState("win"), 500);
       }
     },
-    [totalOrbs, difficulty.id, difficulty.time],
+    [totalOrbs, difficulty.id, difficulty.time, sharedSeed],
   );
 
   const handleDamage = useCallback(() => {
@@ -292,7 +345,7 @@ export function MazeGame() {
 
   const handleRestart = useCallback(() => {
     setBgmVolume(0.22);
-    const fresh = makeMaze(difficulty);
+    const fresh = makeMaze(difficulty, sharedSeed);
     collectedRef.current = new Array(fresh.orbPositions.length).fill(false);
     itemsCollectedRef.current = new Array(fresh.items.length).fill(false);
     timeLeftRef.current = difficulty.time;
@@ -316,11 +369,15 @@ export function MazeGame() {
     setTouchPaused(false);
     setGameOverReason(null);
     setGameState("playing");
-  }, [difficulty]);
+  }, [difficulty, sharedSeed]);
 
   const handleDifficultyChange = useCallback((d: Difficulty) => {
     setDifficultyState(d);
     saveDifficulty(d.id);
+  }, []);
+
+  const handleClearShareSeed = useCallback(() => {
+    setSharedSeed(undefined);
   }, []);
 
   const handlePauseToggle = useCallback(() => {
@@ -456,6 +513,8 @@ export function MazeGame() {
           difficulty={difficulty}
           allDifficulties={DIFFICULTIES}
           onDifficultyChange={handleDifficultyChange}
+          sharedSeed={sharedSeed}
+          onClearShareSeed={handleClearShareSeed}
         />
       )}
       {gameState === "gameover" && (

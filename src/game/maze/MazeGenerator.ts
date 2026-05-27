@@ -24,6 +24,32 @@ export interface MazeGenOptions {
   enemyCount?: number;
   /** 道具數（隨機 5 種混合） */
   itemCount?: number;
+  /** 確定性隨機種子（D6 班級共享：相同 seed = 相同迷宮）*/
+  seed?: string;
+}
+
+/**
+ * 輕量級確定性 PRNG（Mulberry32）— 比 seedrandom 套件小很多（0 byte vs ~3 KB），
+ * 對教學遊戲足夠用。從 string seed 轉成 uint32。
+ */
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return function () {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function stringToSeed(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
 }
 
 const DEFAULT_ITEM_POOL: ItemType[] = [
@@ -34,13 +60,15 @@ const DEFAULT_ITEM_POOL: ItemType[] = [
   "speed",
 ];
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+function makeShuffle(rng: () => number) {
+  return function <T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
 }
 
 export function generateMaze(
@@ -48,6 +76,8 @@ export function generateMaze(
   rows: number,
   options: MazeGenOptions = {},
 ): MazeData {
+  const rng = options.seed ? mulberry32(stringToSeed(options.seed)) : Math.random;
+  const shuffle = makeShuffle(rng);
   const W = cols * 2 + 1;
   const H = rows * 2 + 1;
   const grid: number[][] = Array.from({ length: H }, () => Array(W).fill(1));
@@ -125,7 +155,7 @@ export function generateMaze(
       }
     }
     if (neighbors.length === 0) return [cell];
-    const picked = neighbors[Math.floor(Math.random() * neighbors.length)];
+    const picked = neighbors[Math.floor(rng() * neighbors.length)];
     return [cell, picked];
   });
 
@@ -137,7 +167,7 @@ export function generateMaze(
   );
   const items: ItemPlacement[] = itemCells.map((c) => ({
     ...c,
-    type: DEFAULT_ITEM_POOL[Math.floor(Math.random() * DEFAULT_ITEM_POOL.length)],
+    type: DEFAULT_ITEM_POOL[Math.floor(rng() * DEFAULT_ITEM_POOL.length)],
   }));
 
   return {

@@ -10,6 +10,8 @@ interface StartScreenProps {
   difficulty: Difficulty;
   allDifficulties: Difficulty[];
   onDifficultyChange: (d: Difficulty) => void;
+  sharedSeed?: string;
+  onClearShareSeed?: () => void;
 }
 
 export function StartScreen({
@@ -18,6 +20,8 @@ export function StartScreen({
   difficulty,
   allDifficulties,
   onDifficultyChange,
+  sharedSeed,
+  onClearShareSeed,
 }: StartScreenProps) {
   const initial = loadProfile();
   const [nickname, setNickname] = useState(initial.nickname);
@@ -99,6 +103,49 @@ export function StartScreen({
         >
           收集所有光球，躲避敵人
         </p>
+
+        {/* 班級共享 banner（從 URL ?class=601&seed=2547 進來時顯示）*/}
+        {sharedSeed && (
+          <div
+            data-testid="banner-shared-seed"
+            style={{
+              background: "rgba(255,170,0,0.12)",
+              border: "1px solid rgba(255,170,0,0.4)",
+              borderRadius: "10px",
+              padding: "0.7rem 1rem",
+              marginBottom: "clamp(0.8rem, 2.5vh, 1.3rem)",
+              width: "90%",
+              maxWidth: "340px",
+              textAlign: "center",
+              color: "rgba(255,210,140,0.95)",
+              fontSize: "0.82rem",
+              lineHeight: 1.5,
+            }}
+          >
+            <div style={{ fontWeight: 800, marginBottom: "0.2rem" }}>
+              🎓 班級挑戰模式
+            </div>
+            <div style={{ fontSize: "0.72rem", color: "rgba(255,210,140,0.7)" }}>
+              所有人玩同一張迷宮 (seed: {sharedSeed})
+            </div>
+            <button
+              onClick={onClearShareSeed}
+              data-testid="button-leave-share"
+              style={{
+                marginTop: "0.4rem",
+                background: "transparent",
+                border: "none",
+                color: "rgba(255,210,140,0.55)",
+                cursor: "pointer",
+                fontSize: "0.7rem",
+                textDecoration: "underline",
+                fontFamily: "inherit",
+              }}
+            >
+              離開班級模式
+            </button>
+          </div>
+        )}
 
         {/* 難度選擇 */}
         <div
