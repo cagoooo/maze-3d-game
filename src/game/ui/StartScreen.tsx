@@ -3,6 +3,9 @@ import { Leaderboard } from "./Leaderboard";
 import { Footer } from "./Footer";
 import { loadProfile, saveProfile, type LeaderboardEntry } from "../leaderboard";
 import type { Difficulty } from "../difficulty";
+import { theme } from "./theme";
+import { GlassCard, Corners, Eyebrow } from "./GlassCard";
+import { CorridorBackdrop } from "./CorridorBackdrop";
 
 interface StartScreenProps {
   onStart: () => void;
@@ -44,396 +47,417 @@ export function StartScreen({
         inset: 0,
         overflowY: "auto",
         overflowX: "hidden",
-        overscrollBehavior: "contain",
         WebkitOverflowScrolling: "touch",
-        display: "flex",
-        flexDirection: "column",
-        background: "linear-gradient(135deg, #0a0a1a 0%, #0d1a2e 50%, #0a0a1a 100%)",
+        background: theme.bgDeep,
         zIndex: 100,
         userSelect: "none",
+        fontFamily: theme.body,
+        color: theme.white,
       }}
     >
-      <div
-        style={{
-          position: "fixed",
-          inset: 0,
-          background:
-            "radial-gradient(ellipse at center, rgba(0,200,255,0.05) 0%, transparent 70%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
+      <CorridorBackdrop tint="cyan" orbCount={3} />
 
+      {/* Top REC chrome */}
       <div
         style={{
-          margin: "auto",
-          width: "100%",
-          maxWidth: "520px",
-          padding: "clamp(1.5rem, 4vh, 3rem) clamp(1rem, 4vw, 2rem)",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 56,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 28px",
+          fontFamily: theme.mono,
+          fontSize: 11,
+          color: theme.textDim,
+          letterSpacing: "0.22em",
+          zIndex: 2,
+        }}
+      >
+        <span>
+          <span style={{ color: theme.red, marginRight: 6, animation: "imm-blink 1.5s infinite" }}>●</span>
+          REC · CORRIDOR_07
+        </span>
+        <span style={{ color: theme.cyan, letterSpacing: "0.4em", fontWeight: 600, fontSize: 12 }}>
+          MAZE.OS
+        </span>
+        <span>FPS 60</span>
+      </div>
+
+      {/* Centered card */}
+      <div
+        style={{
+          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "center",
+          padding: "80px 16px 40px",
           position: "relative",
           zIndex: 1,
         }}
       >
-        <h1
+        <GlassCard
           style={{
-            fontSize: "clamp(2rem, 6vw, 3.5rem)",
-            fontWeight: 900,
-            color: "#00e5ff",
-            textShadow:
-              "0 0 30px rgba(0,229,255,0.8), 0 0 60px rgba(0,229,255,0.4)",
-            marginBottom: "0.5rem",
-            letterSpacing: "0.1em",
-            textAlign: "center",
+            width: "min(720px, 100%)",
+            padding: "clamp(28px, 5vw, 52px) clamp(24px, 5vw, 56px)",
+            animation: "imm-fade-in .5s ease",
           }}
         >
-          3D 迷宮冒險
-        </h1>
+          {/* Eyebrow */}
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: theme.cyan,
+                boxShadow: `0 0 12px ${theme.cyan}`,
+              }}
+            />
+            <Eyebrow color={theme.cyan}>Ready to enter · 準備進入</Eyebrow>
+          </div>
 
-        <p
-          style={{
-            fontSize: "clamp(0.9rem, 2.2vw, 1.1rem)",
-            color: "rgba(180,220,255,0.7)",
-            marginBottom: "clamp(1.2rem, 4vh, 2rem)",
-            letterSpacing: "0.05em",
-            textAlign: "center",
-          }}
-        >
-          收集所有光球，躲避敵人
-        </p>
-
-        {/* 班級共享 banner（從 URL ?class=601&seed=2547 進來時顯示）*/}
-        {sharedSeed && (
-          <div
-            data-testid="banner-shared-seed"
+          {/* Title */}
+          <h1
             style={{
-              background: "rgba(255,170,0,0.12)",
-              border: "1px solid rgba(255,170,0,0.4)",
-              borderRadius: "10px",
-              padding: "0.7rem 1rem",
-              marginBottom: "clamp(0.8rem, 2.5vh, 1.3rem)",
-              width: "90%",
-              maxWidth: "340px",
-              textAlign: "center",
-              color: "rgba(255,210,140,0.95)",
-              fontSize: "0.82rem",
-              lineHeight: 1.5,
+              margin: 0,
+              fontSize: "clamp(38px, 6vw, 64px)",
+              fontWeight: 200,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.02,
+              color: theme.white,
+              fontFamily: theme.display,
             }}
           >
-            <div style={{ fontWeight: 800, marginBottom: "0.2rem" }}>
-              🎓 班級挑戰模式
-            </div>
-            <div style={{ fontSize: "0.72rem", color: "rgba(255,210,140,0.7)" }}>
-              所有人玩同一張迷宮 (seed: {sharedSeed})
-            </div>
-            <button
-              onClick={onClearShareSeed}
-              data-testid="button-leave-share"
+            3D{" "}
+            <span
               style={{
-                marginTop: "0.4rem",
-                background: "transparent",
-                border: "none",
-                color: "rgba(255,210,140,0.55)",
-                cursor: "pointer",
-                fontSize: "0.7rem",
-                textDecoration: "underline",
-                fontFamily: "inherit",
+                fontWeight: 700,
+                background: `linear-gradient(90deg, ${theme.cyan} 0%, ${theme.mint} 100%)`,
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
               }}
             >
-              離開班級模式
-            </button>
-          </div>
-        )}
-
-        {/* 難度選擇 */}
-        <div
-          style={{
-            background: "rgba(0,12,28,0.7)",
-            border: "1px solid rgba(0,229,255,0.22)",
-            borderRadius: "12px",
-            padding: "clamp(0.9rem, 2vw, 1.2rem) clamp(1rem, 2.5vw, 1.4rem)",
-            marginBottom: "clamp(0.8rem, 2.5vh, 1.3rem)",
-            width: "90%",
-            maxWidth: "340px",
-          }}
-        >
-          <div
+              迷宮冒險
+            </span>
+          </h1>
+          <p
             style={{
-              color: "rgba(0,229,255,0.75)",
-              fontSize: "0.7rem",
-              letterSpacing: "0.18em",
-              marginBottom: "0.6rem",
-              textAlign: "center",
+              margin: "14px 0 32px",
+              fontSize: "clamp(13px, 1.6vw, 15px)",
+              color: theme.textDim,
+              lineHeight: 1.6,
+              letterSpacing: "0.05em",
             }}
           >
-            難度
+            收集所有藍色光球 · 避開紅色巡守者 · 越快通關得分越高
+          </p>
+
+          {/* Shared seed banner */}
+          {sharedSeed && (
+            <div
+              data-testid="banner-shared-seed"
+              style={{
+                background: "rgba(255,215,110,0.08)",
+                border: `1px solid ${theme.amber}55`,
+                borderRadius: 4,
+                padding: "12px 16px",
+                marginBottom: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 14,
+              }}
+            >
+              <div>
+                <Eyebrow color={theme.amber} size={10} style={{ marginBottom: 4 }}>
+                  班級挑戰模式
+                </Eyebrow>
+                <div style={{ fontSize: 13, color: theme.text }}>
+                  全班共用同一張迷宮 ·{" "}
+                  <span style={{ fontFamily: theme.mono, color: theme.amber }}>seed {sharedSeed}</span>
+                </div>
+              </div>
+              <button
+                onClick={onClearShareSeed}
+                data-testid="button-leave-share"
+                style={{
+                  background: "transparent",
+                  border: `1px solid ${theme.border}`,
+                  color: theme.textDim,
+                  padding: "6px 10px",
+                  fontFamily: theme.mono,
+                  fontSize: 10,
+                  letterSpacing: "0.25em",
+                  borderRadius: 3,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                EXIT
+              </button>
+            </div>
+          )}
+
+          {/* Difficulty */}
+          <div style={{ marginBottom: 28 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
+              <Eyebrow color={theme.cyan} size={10}>難度 · Difficulty</Eyebrow>
+              <Eyebrow color={theme.textFade} size={9}>
+                {difficulty.description}
+              </Eyebrow>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${allDifficulties.length}, 1fr)`,
+                gap: 6,
+              }}
+            >
+              {allDifficulties.map((d) => {
+                const active = d.id === difficulty.id;
+                return (
+                  <button
+                    key={d.id}
+                    onClick={() => onDifficultyChange(d)}
+                    data-testid={`difficulty-${d.id}`}
+                    style={{
+                      padding: "16px 8px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      border: `1px solid ${active ? theme.cyan : theme.border}`,
+                      background: active ? "rgba(92,214,255,0.10)" : "rgba(255,255,255,0.015)",
+                      borderRadius: 4,
+                      position: "relative",
+                      transition: "all .15s",
+                      color: theme.text,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {active && (
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 10,
+                          width: 6,
+                          height: 6,
+                          borderRadius: "50%",
+                          background: theme.cyan,
+                          boxShadow: `0 0 0 3px rgba(92,214,255,0.25)`,
+                        }}
+                      />
+                    )}
+                    <div
+                      style={{
+                        fontFamily: theme.mono,
+                        fontSize: 9,
+                        color: active ? theme.cyan : theme.textFade,
+                        letterSpacing: "0.25em",
+                        marginBottom: 8,
+                      }}
+                    >
+                      {d.id.toUpperCase()}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: active ? 700 : 500,
+                        color: active ? theme.white : theme.text,
+                        letterSpacing: "0.05em",
+                        marginBottom: 8,
+                      }}
+                    >
+                      {d.emoji} {d.label}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        gap: 10,
+                        fontFamily: theme.mono,
+                        fontSize: 10,
+                        color: theme.textFade,
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      <span>{d.cols}×{d.rows}</span>
+                      <span style={{ opacity: 0.3 }}>·</span>
+                      <span>{d.time}s</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Inputs */}
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "6px",
+              gridTemplateColumns: "2fr 1fr",
+              gap: 24,
+              marginBottom: 32,
             }}
           >
-            {allDifficulties.map((d) => {
-              const active = d.id === difficulty.id;
-              return (
-                <button
-                  key={d.id}
-                  onClick={() => onDifficultyChange(d)}
-                  data-testid={`difficulty-${d.id}`}
-                  style={{
-                    background: active
-                      ? "rgba(0,229,255,0.18)"
-                      : "rgba(0,0,0,0.45)",
-                    border: `1px solid ${active ? "rgba(0,229,255,0.7)" : "rgba(0,229,255,0.15)"}`,
-                    borderRadius: "8px",
-                    padding: "8px 10px",
-                    color: active ? "#00e5ff" : "rgba(220,236,255,0.78)",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    fontFamily: "inherit",
-                    textAlign: "left",
-                    boxShadow: active
-                      ? "0 0 12px rgba(0,229,255,0.25)"
-                      : "none",
-                  }}
-                >
-                  <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                    {d.emoji} {d.label}
-                  </div>
-                  <div style={{ fontSize: "0.68rem", opacity: 0.7, marginTop: "2px" }}>
-                    {d.cols}×{d.rows} ・ {d.time}s
-                  </div>
-                </button>
-              );
-            })}
+            <ImmField label="暱稱" en="CALLSIGN">
+              <input
+                data-testid="input-nickname"
+                type="text"
+                maxLength={4}
+                placeholder="最多 4 字"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value.trim())}
+                style={fieldInputStyle(!!nickname)}
+              />
+            </ImmField>
+            <ImmField label="班級" en="CLASS">
+              <input
+                data-testid="input-classcode"
+                type="text"
+                maxLength={6}
+                placeholder="601 (選填)"
+                value={classCode}
+                onChange={(e) => setClassCode(e.target.value.trim())}
+                style={fieldInputStyle(!!classCode)}
+              />
+            </ImmField>
           </div>
-          <div
-            style={{
-              marginTop: "0.6rem",
-              fontSize: "0.72rem",
-              color: "rgba(180,220,255,0.55)",
-              textAlign: "center",
-              lineHeight: 1.5,
-            }}
-            data-testid="difficulty-desc"
-          >
-            {difficulty.description}
-          </div>
-        </div>
 
-        {/* 玩家資料：暱稱 + 班級代碼 */}
-        <div
-          style={{
-            background: "rgba(0,12,28,0.7)",
-            border: "1px solid rgba(0,229,255,0.22)",
-            borderRadius: "12px",
-            padding: "clamp(0.9rem, 2vw, 1.2rem) clamp(1rem, 2.5vw, 1.4rem)",
-            marginBottom: "clamp(0.8rem, 2.5vh, 1.3rem)",
-            width: "90%",
-            maxWidth: "340px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.55rem",
-          }}
-        >
-          <div
+          {/* CTA */}
+          <button
+            onClick={handleStart}
+            data-testid="button-start-game"
             style={{
-              color: "rgba(0,229,255,0.75)",
-              fontSize: "0.7rem",
-              letterSpacing: "0.18em",
-              marginBottom: "0.2rem",
-              textAlign: "center",
-            }}
-          >
-            玩家資料
-          </div>
-          <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span
-              style={{
-                minWidth: "44px",
-                color: "rgba(180,220,255,0.75)",
-                fontSize: "0.85rem",
-              }}
-            >
-              暱稱
-            </span>
-            <input
-              data-testid="input-nickname"
-              type="text"
-              maxLength={4}
-              placeholder="最多 4 字"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value.trim())}
-              style={{
-                flex: 1,
-                background: "rgba(0,0,0,0.5)",
-                border: "1px solid rgba(0,229,255,0.22)",
-                borderRadius: "6px",
-                padding: "7px 10px",
-                color: "#fff",
-                fontSize: "0.92rem",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
-            />
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span
-              style={{
-                minWidth: "44px",
-                color: "rgba(180,220,255,0.75)",
-                fontSize: "0.85rem",
-              }}
-            >
-              班級
-            </span>
-            <input
-              data-testid="input-classcode"
-              type="text"
-              maxLength={6}
-              placeholder="例：601(選填)"
-              value={classCode}
-              onChange={(e) => setClassCode(e.target.value.trim())}
-              style={{
-                flex: 1,
-                background: "rgba(0,0,0,0.5)",
-                border: "1px solid rgba(0,229,255,0.22)",
-                borderRadius: "6px",
-                padding: "7px 10px",
-                color: "#fff",
-                fontSize: "0.92rem",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
-            />
-          </label>
-        </div>
-
-        <div
-          style={{
-            background: "rgba(0,20,40,0.8)",
-            border: "1px solid rgba(0,229,255,0.2)",
-            borderRadius: "12px",
-            padding: "clamp(1rem, 2.5vw, 1.5rem) clamp(1.2rem, 3vw, 2rem)",
-            marginBottom: "clamp(1rem, 3vh, 2rem)",
-            maxWidth: "340px",
-            width: "90%",
-          }}
-        >
-          <p
-            style={{
-              color: "#00e5ff",
+              width: "100%",
+              padding: "20px 24px",
+              background: theme.white,
+              color: theme.bgDeep,
+              border: "none",
+              borderRadius: 3,
+              fontSize: 16,
               fontWeight: 700,
-              marginBottom: "0.7rem",
-              fontSize: "1rem",
+              letterSpacing: "0.3em",
+              fontFamily: theme.body,
+              cursor: "pointer",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              textTransform: "uppercase",
+            }}
+            onMouseEnter={(e) => {
+              (e.target as HTMLButtonElement).style.background = theme.cyan;
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLButtonElement).style.background = theme.white;
             }}
           >
-            遊戲說明
-          </p>
+            <span>進入迷宮</span>
+            <span style={{ fontFamily: theme.mono, fontSize: 11, opacity: 0.55, letterSpacing: "0.2em" }}>
+              ENTER ↵
+            </span>
+          </button>
+
+          {/* Hint */}
           <div
             style={{
-              color: "rgba(200,230,255,0.8)",
-              fontSize: "0.88rem",
-              lineHeight: "1.75",
+              marginTop: 22,
+              paddingTop: 18,
+              borderTop: `1px solid ${theme.borderSoft}`,
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              gap: 24,
+              fontFamily: theme.mono,
+              fontSize: 10,
+              color: theme.textFade,
+              letterSpacing: "0.2em",
             }}
           >
-            <div>🖱 移動滑鼠 — 環顧四周</div>
-            <div>⌨ WASD / 方向鍵 — 移動</div>
-            <div>💎 收集所有藍色光球得分</div>
-            <div>👾 避開紅色敵人</div>
-            <div>⏱ 越快完成分數越高</div>
+            <span>WASD · MOVE</span>
+            <span>MOUSE · LOOK</span>
+            <span>
+              <span style={{ color: theme.cyan }}>◆</span> COLLECT
+            </span>
+            <span>
+              <span style={{ color: theme.red }}>▲</span> AVOID
+            </span>
+            <span>ESC · PAUSE</span>
           </div>
-        </div>
+        </GlassCard>
 
-        <button
-          onClick={handleStart}
-          data-testid="button-start-game"
-          style={{
-            padding: "clamp(0.8rem, 2vh, 1rem) clamp(2rem, 6vw, 3rem)",
-            fontSize: "clamp(1.05rem, 2.5vw, 1.3rem)",
-            fontWeight: 700,
-            color: "#0a0a1a",
-            background: "linear-gradient(135deg, #00e5ff, #0066ff)",
-            border: "none",
-            borderRadius: "50px",
-            cursor: "pointer",
-            boxShadow:
-              "0 0 30px rgba(0,229,255,0.5), 0 4px 20px rgba(0,0,0,0.4)",
-            transition: "transform 0.1s, box-shadow 0.1s",
-            letterSpacing: "0.1em",
-          }}
-          onMouseEnter={(e) => {
-            (e.target as HTMLButtonElement).style.transform = "scale(1.05)";
-            (e.target as HTMLButtonElement).style.boxShadow =
-              "0 0 50px rgba(0,229,255,0.7), 0 4px 30px rgba(0,0,0,0.5)";
-          }}
-          onMouseLeave={(e) => {
-            (e.target as HTMLButtonElement).style.transform = "scale(1)";
-            (e.target as HTMLButtonElement).style.boxShadow =
-              "0 0 30px rgba(0,229,255,0.5), 0 4px 20px rgba(0,0,0,0.4)";
-          }}
-        >
-          開始遊戲
-        </button>
-
-        <div
-          style={{
-            marginTop: "clamp(1rem, 2.5vh, 1.5rem)",
-            padding: "0.9rem 1.2rem",
-            background: "rgba(0,229,255,0.06)",
-            border: "1px solid rgba(0,229,255,0.22)",
-            borderRadius: "10px",
-            color: "rgba(220,236,255,0.85)",
-            fontSize: "0.85rem",
-            lineHeight: 1.7,
-            width: "100%",
-            maxWidth: "420px",
-            textAlign: "left",
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              color: "rgba(0,229,255,0.8)",
-              fontSize: "0.75rem",
-              letterSpacing: "0.18em",
-              marginBottom: "6px",
-              textAlign: "center",
-            }}
-          >
-            操作說明
-          </div>
-          <div>
-            ・ <b>WASD / 方向鍵</b>：移動
-          </div>
-          <div>
-            ・ <b>滑鼠</b>：控制視角（點擊畫面以鎖定）
-          </div>
-          <div>
-            ・ <b>ESC 鍵</b>：釋放滑鼠游標、暫停遊戲
-          </div>
-          <div>
-            ・ <b>P 鍵</b>：顯示／隱藏雷達小地圖
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: "clamp(1.2rem, 3vh, 1.8rem)",
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <Leaderboard entries={leaderboard} accent="#00e5ff" />
+        {/* Leaderboard below — wider, separated for breathing room */}
+        <div style={{ marginTop: 36, width: "min(720px, 100%)" }}>
+          <Leaderboard entries={leaderboard} accent={theme.cyan} />
         </div>
 
         <Footer showVersion />
       </div>
+
+      {/* Bottom-corner credits */}
+      <Corners color={theme.border} />
     </div>
   );
+}
+
+function ImmField({
+  label,
+  en,
+  children,
+}: {
+  label: string;
+  en: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label style={{ display: "block" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ fontSize: 13, color: theme.text, letterSpacing: "0.05em" }}>{label}</span>
+        <span
+          style={{
+            fontFamily: theme.mono,
+            fontSize: 9,
+            color: theme.textFade,
+            letterSpacing: "0.3em",
+          }}
+        >
+          {en}
+        </span>
+      </div>
+      {children}
+    </label>
+  );
+}
+
+function fieldInputStyle(filled: boolean): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: "10px 0",
+    background: "transparent",
+    border: "none",
+    borderBottom: `1px solid ${filled ? theme.cyan : theme.border}`,
+    color: theme.white,
+    fontSize: 17,
+    fontFamily: theme.body,
+    outline: "none",
+    transition: "border-color .15s",
+  };
 }

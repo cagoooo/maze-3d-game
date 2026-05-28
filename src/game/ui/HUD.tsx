@@ -1,6 +1,8 @@
 import { Minimap, type PlayerState } from "./Minimap";
 import { DamageOverlay } from "./DamageOverlay";
 import type { MazeData } from "../maze/MazeGenerator";
+import { theme } from "./theme";
+import { GlassCard, Eyebrow } from "./GlassCard";
 
 interface HUDProps {
   score: number;
@@ -20,11 +22,8 @@ interface HUDProps {
   onMuteToggle?: () => void;
   muted?: boolean;
   isTouch?: boolean;
-  /** 道具 map 啟動時顯示整張迷宮 */
   showFullMap?: boolean;
-  /** 道具 stealth 剩餘 ms */
   stealthRemaining?: number;
-  /** 道具 speed 剩餘 ms */
   speedRemaining?: number;
 }
 
@@ -53,198 +52,239 @@ export function HUD({
   const safeTime = Math.max(0, timeLeft);
   const minutes = Math.floor(safeTime / 60);
   const seconds = safeTime % 60;
-  const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  const timeColor = safeTime <= 10 ? '#ff3366' : safeTime <= 20 ? '#ffaa00' : '#fff';
-  const healthPct = Math.max(0, Math.min(100, (health / 3) * 100));
+  const timeStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const timeColor =
+    safeTime <= 10 ? theme.red : safeTime <= 20 ? theme.amber : theme.white;
+  const orbColor = collected === total ? theme.amber : theme.cyan;
+  const totalPct = total > 0 ? (collected / total) * 100 : 0;
 
   return (
     <>
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        padding: '16px 20px',
-        zIndex: 50,
-        pointerEvents: 'none',
-      }}>
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-        }}>
-          <div style={{
-            background: 'rgba(0,0,0,0.65)',
-            border: '1px solid rgba(0,229,255,0.25)',
-            borderRadius: '8px',
-            padding: '8px 14px',
-            backdropFilter: 'blur(4px)',
-          }}>
-            <div style={{ color: 'rgba(0,229,255,0.6)', fontSize: '0.65rem', letterSpacing: '0.15em', marginBottom: '2px' }}>得分</div>
-            <div style={{ color: '#fff', fontSize: '1.4rem', fontWeight: 900, lineHeight: 1 }} data-testid="text-score">{score}</div>
+      {/* Top bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          padding: "20px 24px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 16,
+          zIndex: 50,
+          pointerEvents: "none",
+          fontFamily: theme.body,
+        }}
+      >
+        {/* LEFT — Score */}
+        <GlassCard strong style={{ padding: "12px 18px", minWidth: 150 }}>
+          <Eyebrow color={theme.cyan} size={9} style={{ marginBottom: 4 }}>
+            SCORE · 得分
+          </Eyebrow>
+          <div
+            style={{
+              fontFamily: theme.body,
+              fontSize: 28,
+              fontWeight: 300,
+              letterSpacing: "-0.01em",
+              color: theme.white,
+              lineHeight: 1,
+              fontVariantNumeric: "tabular-nums",
+            }}
+            data-testid="text-score"
+          >
+            {score.toLocaleString()}
           </div>
+        </GlassCard>
 
-          <div style={{
-            background: 'rgba(0,0,0,0.65)',
-            border: '1px solid rgba(0,229,255,0.25)',
-            borderRadius: '8px',
-            padding: '8px 14px',
-            backdropFilter: 'blur(4px)',
-          }}>
-            <div style={{ color: 'rgba(0,229,255,0.6)', fontSize: '0.65rem', letterSpacing: '0.15em', marginBottom: '2px' }}>已收集</div>
-            <div style={{ color: collected === total ? '#ffd700' : '#00e5ff', fontSize: '1.1rem', fontWeight: 700, lineHeight: 1 }} data-testid="text-collected">
-              {collected} / {total}
-            </div>
+        {/* CENTER — Timer */}
+        <div style={{ textAlign: "center", flex: "0 1 auto", minWidth: 200 }}>
+          <Eyebrow color={theme.textDim} size={9} style={{ marginBottom: 4 }}>
+            TIME · 剩餘時間
+          </Eyebrow>
+          <div
+            style={{
+              fontFamily: theme.mono,
+              fontSize: 40,
+              fontWeight: 300,
+              letterSpacing: "0.05em",
+              color: timeColor,
+              lineHeight: 1,
+              textShadow: "0 2px 24px rgba(0,0,0,.8)",
+              fontVariantNumeric: "tabular-nums",
+              transition: "color .2s",
+            }}
+            data-testid="text-timer"
+          >
+            {timeStr}
+          </div>
+          {/* progress bar (orbs collected) */}
+          <div
+            style={{
+              marginTop: 8,
+              width: 220,
+              height: 2,
+              background: "rgba(255,255,255,.12)",
+              position: "relative",
+              margin: "8px auto 0",
+            }}
+          >
+            <div
+              data-testid="bar-progress"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                bottom: 0,
+                width: `${totalPct}%`,
+                background: `linear-gradient(90deg, ${theme.cyan}, ${theme.mint})`,
+                boxShadow: `0 0 10px ${theme.cyan}88`,
+                transition: "width .3s ease",
+              }}
+            />
           </div>
         </div>
 
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: '8px',
-        }}>
-          <div style={{
-            background: 'rgba(0,0,0,0.65)',
-            border: '1px solid rgba(0,229,255,0.25)',
-            borderRadius: '8px',
-            padding: '8px 14px',
-            backdropFilter: 'blur(4px)',
-            textAlign: 'right',
-          }}>
-            <div style={{ color: 'rgba(0,229,255,0.6)', fontSize: '0.65rem', letterSpacing: '0.15em', marginBottom: '2px' }}>剩餘時間</div>
-            <div style={{ color: timeColor, fontSize: '1.4rem', fontWeight: 900, lineHeight: 1, fontVariantNumeric: 'tabular-nums', transition: 'color 0.2s' }} data-testid="text-timer">{timeStr}</div>
-          </div>
-
-          <div style={{
-            background: 'rgba(0,0,0,0.65)',
-            border: '1px solid rgba(0,229,255,0.25)',
-            borderRadius: '8px',
-            padding: '8px 14px',
-            backdropFilter: 'blur(4px)',
-            minWidth: '110px',
-          }}>
-            <div style={{ color: 'rgba(0,229,255,0.6)', fontSize: '0.65rem', letterSpacing: '0.15em', marginBottom: '4px' }}>生命值</div>
-            <div style={{
-              height: '6px',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '3px',
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                height: '100%',
-                width: `${healthPct}%`,
-                background: healthPct > 60 ? '#00ff88' : healthPct > 30 ? '#ffaa00' : '#ff3366',
-                borderRadius: '3px',
-                transition: 'width 0.3s ease, background 0.3s ease',
-              }} data-testid="bar-health" />
+        {/* RIGHT — Orbs + Health + Buttons */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+          <GlassCard strong style={{ padding: "12px 18px", minWidth: 150, textAlign: "right" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                marginBottom: 6,
+                gap: 12,
+              }}
+            >
+              <Eyebrow color={theme.cyan} size={9}>ORBS · 光球</Eyebrow>
+              <span
+                data-testid="text-collected"
+                style={{
+                  fontFamily: theme.mono,
+                  fontSize: 12,
+                  color: orbColor,
+                  letterSpacing: "0.1em",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {collected}/{total}
+              </span>
             </div>
-            <div style={{ color: '#fff', fontSize: '0.75rem', marginTop: '3px', textAlign: 'right' }}>
-              {Array.from({ length: 3 }, (_, i) => (
-                <span key={i} style={{ color: i < health ? '#ff3366' : 'rgba(255,255,255,0.2)', marginLeft: '2px' }}>❤</span>
+            <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", flexWrap: "wrap" }}>
+              {Array.from({ length: Math.min(total, 12) }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 11,
+                    height: 11,
+                    borderRadius: "50%",
+                    background: i < collected ? orbColor : "transparent",
+                    border: i < collected ? "none" : `1px solid ${theme.textGhost}`,
+                    boxShadow: i < collected ? `0 0 6px ${orbColor}88` : "none",
+                  }}
+                />
+              ))}
+              {total > 12 && (
+                <span style={{ fontFamily: theme.mono, fontSize: 10, color: theme.textFade, marginLeft: 4 }}>
+                  +{total - 12}
+                </span>
+              )}
+            </div>
+          </GlassCard>
+
+          {/* Health */}
+          <GlassCard strong style={{ padding: "10px 18px", minWidth: 150 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+                marginBottom: 6,
+              }}
+            >
+              <Eyebrow color={theme.red} size={9}>HEALTH · 生命</Eyebrow>
+              <span style={{ fontFamily: theme.mono, fontSize: 11, color: theme.text }}>
+                {health}/3
+              </span>
+            </div>
+            <div data-testid="bar-health" style={{ display: "flex", gap: 4 }}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    flex: 1,
+                    height: 4,
+                    background: i < health ? theme.red : "rgba(255,255,255,.12)",
+                    borderRadius: 2,
+                    boxShadow: i < health ? `0 0 6px ${theme.red}66` : "none",
+                    transition: "background .2s",
+                  }}
+                />
               ))}
             </div>
-          </div>
+          </GlassCard>
 
-          <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
-            <button
-              data-testid="button-pause"
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 6, pointerEvents: "auto" }}>
+            <IconButton
+              testId="button-pause"
               onClick={onPauseToggle}
-              title={isPaused ? '繼續（同 ESC）' : '暫停（同 ESC）'}
-              style={{
-                flex: 1,
-                background: isPaused ? 'rgba(255,170,0,0.18)' : 'rgba(0,229,255,0.15)',
-                border: `1px solid ${isPaused ? 'rgba(255,170,0,0.4)' : 'rgba(0,229,255,0.32)'}`,
-                borderRadius: '6px',
-                padding: '6px 8px',
-                color: isPaused ? '#ffaa00' : '#00e5ff',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                pointerEvents: 'auto',
-                fontFamily: 'inherit',
-              }}
+              title={isPaused ? "繼續（同 ESC）" : "暫停（同 ESC）"}
+              active={isPaused}
+              tint={isPaused ? theme.amber : theme.cyan}
             >
-              {isPaused ? '▶' : '⏸'}
-            </button>
-            <button
-              data-testid="button-map-toggle"
+              {isPaused ? "▶" : "⏸"}
+            </IconButton>
+            <IconButton
+              testId="button-map-toggle"
               onClick={onMapToggle}
-              title={mapVisible ? '隱藏小地圖（同 P）' : '顯示小地圖（同 P）'}
-              style={{
-                flex: 1,
-                background: mapVisible ? 'rgba(0,229,255,0.15)' : 'rgba(120,120,140,0.15)',
-                border: `1px solid ${mapVisible ? 'rgba(0,229,255,0.32)' : 'rgba(180,180,200,0.25)'}`,
-                borderRadius: '6px',
-                padding: '6px 8px',
-                color: mapVisible ? '#00e5ff' : 'rgba(200,210,230,0.6)',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                pointerEvents: 'auto',
-                fontFamily: 'inherit',
-              }}
+              title={mapVisible ? "隱藏小地圖（同 P）" : "顯示小地圖（同 P）"}
+              active={mapVisible}
+              tint={theme.cyan}
             >
               🗺
-            </button>
-            <button
-              data-testid="button-restart"
+            </IconButton>
+            <IconButton
+              testId="button-restart"
               onClick={onRestart}
               title="重新開始整局"
-              style={{
-                flex: 1,
-                background: 'rgba(255,170,0,0.12)',
-                border: '1px solid rgba(255,170,0,0.32)',
-                borderRadius: '6px',
-                padding: '6px 8px',
-                color: '#ffaa00',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                pointerEvents: 'auto',
-                fontFamily: 'inherit',
-              }}
+              tint={theme.amber}
             >
               ↻
-            </button>
-            <button
-              data-testid="button-mute"
+            </IconButton>
+            <IconButton
+              testId="button-mute"
               onClick={onMuteToggle}
-              title={muted ? '取消靜音' : '靜音'}
-              style={{
-                flex: 1,
-                background: muted ? 'rgba(120,120,140,0.15)' : 'rgba(0,229,255,0.15)',
-                border: `1px solid ${muted ? 'rgba(180,180,200,0.25)' : 'rgba(0,229,255,0.32)'}`,
-                borderRadius: '6px',
-                padding: '6px 8px',
-                color: muted ? 'rgba(200,210,230,0.6)' : '#00e5ff',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                pointerEvents: 'auto',
-                fontFamily: 'inherit',
-              }}
+              title={muted ? "取消靜音" : "靜音"}
+              active={!muted}
+              tint={theme.cyan}
             >
-              {muted ? '🔇' : '🔊'}
-            </button>
+              {muted ? "🔇" : "🔊"}
+            </IconButton>
           </div>
         </div>
       </div>
 
-      <div style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        zIndex: 50,
-        pointerEvents: 'none',
-      }}>
-        <div style={{
-          width: '8px',
-          height: '8px',
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.9)',
-          boxShadow: '0 0 4px rgba(0,0,0,0.8)',
-        }} />
+      {/* Crosshair */}
+      <div
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 50,
+          pointerEvents: "none",
+        }}
+      >
+        <svg width="32" height="32" viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="2" fill={theme.cyan} opacity=".9" />
+          <line x1="16" y1="4" x2="16" y2="10" stroke={theme.cyan} strokeWidth="1" opacity=".7" />
+          <line x1="16" y1="22" x2="16" y2="28" stroke={theme.cyan} strokeWidth="1" opacity=".7" />
+          <line x1="4" y1="16" x2="10" y2="16" stroke={theme.cyan} strokeWidth="1" opacity=".7" />
+          <line x1="22" y1="16" x2="28" y2="16" stroke={theme.cyan} strokeWidth="1" opacity=".7" />
+        </svg>
       </div>
 
       {mapVisible && (
@@ -256,144 +296,196 @@ export function HUD({
         />
       )}
 
-      {/* 活躍道具效果列（左下角靠地圖上方）*/}
+      {/* Active effects */}
       {(stealthRemaining > 0 || speedRemaining > 0 || showFullMap) && (
         <div
           data-testid="active-effects"
           style={{
-            position: 'fixed',
-            top: '120px',
-            left: '20px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
+            position: "fixed",
+            top: 160,
+            left: 24,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
             zIndex: 55,
-            pointerEvents: 'none',
+            pointerEvents: "none",
           }}
         >
           {stealthRemaining > 0 && (
-            <div
-              style={{
-                background: 'rgba(40,40,50,0.85)',
-                border: '1px solid rgba(200,200,210,0.5)',
-                borderRadius: '6px',
-                padding: '4px 10px',
-                color: '#cccccc',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                backdropFilter: 'blur(4px)',
-              }}
-            >
-              👻 隱身 {(stealthRemaining / 1000).toFixed(1)}s
-            </div>
+            <EffectChip color="rgba(200,200,210,1)" label="👻 隱身" remainingMs={stealthRemaining} />
           )}
           {speedRemaining > 0 && (
-            <div
-              style={{
-                background: 'rgba(50,50,0,0.85)',
-                border: '1px solid rgba(255,238,68,0.5)',
-                borderRadius: '6px',
-                padding: '4px 10px',
-                color: '#ffee44',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                backdropFilter: 'blur(4px)',
-              }}
-            >
-              ⚡ 加速 {(speedRemaining / 1000).toFixed(1)}s
-            </div>
+            <EffectChip color={theme.amber} label="⚡ 加速" remainingMs={speedRemaining} />
           )}
-          {showFullMap && (
-            <div
-              style={{
-                background: 'rgba(50,30,0,0.85)',
-                border: '1px solid rgba(255,204,85,0.5)',
-                borderRadius: '6px',
-                padding: '4px 10px',
-                color: '#ffcc55',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                backdropFilter: 'blur(4px)',
-              }}
-            >
-              🗺 全圖 {showFullMap ? '顯示中' : ''}
-            </div>
-          )}
+          {showFullMap && <EffectChip color={theme.amber} label="🗺 全圖" remainingMs={null} />}
         </div>
       )}
 
       <DamageOverlay health={health} maxHealth={3} />
 
+      {/* Bottom hint when locked */}
       {isLocked && (
-        <div style={{
-          position: 'fixed',
-          bottom: isTouch ? '180px' : '24px',
-          left: isTouch ? 'auto' : '50%',
-          right: isTouch ? '20px' : 'auto',
-          transform: isTouch ? 'none' : 'translateX(-50%)',
-          zIndex: 50,
-          background: 'rgba(0,0,0,0.55)',
-          border: '1px solid rgba(0,229,255,0.18)',
-          borderRadius: '8px',
-          padding: '6px 14px',
-          color: 'rgba(180,220,255,0.7)',
-          fontSize: '0.75rem',
-          letterSpacing: '0.05em',
-          pointerEvents: 'none',
-          backdropFilter: 'blur(4px)',
-          maxWidth: '92vw',
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            bottom: isTouch ? 180 : 24,
+            left: isTouch ? "auto" : "50%",
+            right: isTouch ? 20 : "auto",
+            transform: isTouch ? "none" : "translateX(-50%)",
+            zIndex: 50,
+            padding: "8px 16px",
+            background: "rgba(10,18,30,0.6)",
+            backdropFilter: theme.glassBlur,
+            WebkitBackdropFilter: theme.glassBlur,
+            border: `1px solid ${theme.border}`,
+            borderRadius: 3,
+            color: theme.textDim,
+            fontSize: 11,
+            fontFamily: theme.mono,
+            letterSpacing: "0.15em",
+            pointerEvents: "none",
+            maxWidth: "92vw",
+          }}
+        >
           {isTouch
-            ? '左下搖桿移動 ・ 滑動右半畫面轉視角 ・ 右上按鈕暫停 / 地圖 / 重啟'
-            : 'WASD / 方向鍵移動 ・ 滑鼠視角 ・ 按 [ESC] 釋放游標 ・ 按 [P] 開關地圖'}
+            ? "左下搖桿 · 右半滑動 · 右上按鈕"
+            : "WASD · MOUSE · ESC · P"}
         </div>
       )}
 
+      {/* Pause overlay */}
       {isPaused && (
         <div
           data-testid="overlay-pause"
           style={{
-            position: 'fixed',
+            position: "fixed",
             inset: 0,
             zIndex: 80,
-            background: 'rgba(5,8,15,0.78)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#fff',
-            pointerEvents: 'none',
+            background: "rgba(6,8,13,0.78)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            color: theme.white,
+            pointerEvents: "none",
+            fontFamily: theme.body,
           }}
         >
-          <div style={{
-            fontSize: '2.6rem',
-            fontWeight: 900,
-            letterSpacing: '0.3em',
-            color: '#00e5ff',
-            textShadow: '0 0 20px rgba(0,229,255,0.6)',
-            marginBottom: '1.2rem',
-          }}>
+          <Eyebrow color={theme.cyan} style={{ marginBottom: 18 }}>
+            PAUSED · 遊戲暫停
+          </Eyebrow>
+          <div
+            style={{
+              fontSize: 64,
+              fontWeight: 200,
+              letterSpacing: "-0.02em",
+              marginBottom: 18,
+              background: `linear-gradient(180deg, ${theme.white} 0%, ${theme.cyan} 100%)`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }}
+          >
             遊戲暫停
           </div>
-          <div style={{
-            fontSize: '1rem',
-            color: 'rgba(220,236,255,0.85)',
-            marginBottom: '0.8rem',
-          }}>
-            {isTouch
-              ? '點右上 ▶ 按鈕繼續探索'
-              : '點擊畫面任意處以重新鎖定滑鼠、繼續探索'}
+          <div style={{ fontSize: 14, color: theme.textDim, marginBottom: 8, letterSpacing: "0.05em" }}>
+            {isTouch ? "點右上 ▶ 按鈕繼續探索" : "點擊畫面任意處 / 按 ESC 繼續探索"}
           </div>
-          <div style={{
-            fontSize: '0.8rem',
-            color: 'rgba(180,220,255,0.5)',
-            letterSpacing: '0.08em',
-          }}>
-            計時器與紅怪已暫停 {isTouch ? '' : '・ 按 [ESC] 隨時可再次離開'}
+          <div
+            style={{
+              fontFamily: theme.mono,
+              fontSize: 10,
+              color: theme.textFade,
+              letterSpacing: "0.3em",
+            }}
+          >
+            TIMER & ENEMIES PAUSED
           </div>
         </div>
       )}
     </>
+  );
+}
+
+function IconButton({
+  children,
+  onClick,
+  title,
+  testId,
+  active = false,
+  tint = theme.cyan,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  title?: string;
+  testId: string;
+  active?: boolean;
+  tint?: string;
+}) {
+  return (
+    <button
+      data-testid={testId}
+      onClick={onClick}
+      title={title}
+      style={{
+        width: 34,
+        height: 34,
+        background: active ? `${tint}22` : "rgba(10,18,30,0.6)",
+        backdropFilter: theme.glassBlur,
+        WebkitBackdropFilter: theme.glassBlur,
+        border: `1px solid ${active ? tint : theme.border}`,
+        borderRadius: 3,
+        color: active ? tint : theme.text,
+        fontSize: 14,
+        cursor: "pointer",
+        fontFamily: "inherit",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "all .15s",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function EffectChip({
+  label,
+  remainingMs,
+  color,
+}: {
+  label: string;
+  remainingMs: number | null;
+  color: string;
+}) {
+  return (
+    <div
+      style={{
+        padding: "6px 12px",
+        background: "rgba(10,18,30,0.82)",
+        backdropFilter: theme.glassBlur,
+        WebkitBackdropFilter: theme.glassBlur,
+        border: `1px solid ${color}55`,
+        borderRadius: 3,
+        color,
+        fontSize: 11,
+        fontWeight: 600,
+        fontFamily: theme.body,
+        letterSpacing: "0.1em",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <span>{label}</span>
+      {remainingMs !== null && (
+        <span style={{ fontFamily: theme.mono, opacity: 0.7 }}>
+          {(remainingMs / 1000).toFixed(1)}s
+        </span>
+      )}
+    </div>
   );
 }

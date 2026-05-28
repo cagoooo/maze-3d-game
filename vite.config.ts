@@ -22,7 +22,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      // prompt：偵測到新 SW 後，由 app 自己決定何時呼叫 updateServiceWorker(true)
+      // 避免玩家正在玩到一半就被強制 reload；改為在 StartScreen / 結算畫面顯示 banner
+      registerType: "prompt",
+      // 自己用 useRegisterSW (virtual:pwa-register/react) 註冊，不要 plugin 自動 inject
+      injectRegister: false,
       includeAssets: [
         "favicon.svg",
         "apple-touch-icon.png",

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { isChunkError, recoverFromChunkError } from "./chunkErrorRecovery";
 
 interface Props {
   children: ReactNode;
@@ -6,16 +7,31 @@ interface Props {
 
 interface State {
   error: Error | null;
+  /** chunk error 自癒中：不顯示錯誤畫面（讓 chunkErrorRecovery 的 toast 接手）*/
+  recovering: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, recovering: false };
 
   static getDerivedStateFromError(error: Error): State {
-    return { error };
+    // 第三層自癒：若是 chunk error → 標記 recovering、不顯示「發生錯誤」UI
+    const stack = String(error?.stack ?? "");
+    const msg = String(error?.message ?? "");
+    if (isChunkError(msg) || isChunkError(stack)) {
+      return { error, recovering: true };
+    }
+    return { error, recovering: false };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    const stack = String(error?.stack ?? "");
+    const msg = String(error?.message ?? "");
+    if (isChunkError(msg) || isChunkError(stack)) {
+      console.warn("[ErrorBoundary] chunk error 自癒:", msg);
+      void recoverFromChunkError(msg || "chunk-error-from-boundary");
+      return;
+    }
     console.error("[ErrorBoundary]", error, info);
   }
 
@@ -26,6 +42,30 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (!this.state.error) {
       return this.props.children;
+    }
+
+    // chunk error 自癒中：顯示空畫面（chunkErrorRecovery 的 toast 在 DOM 上方接手）
+    // 1.2 秒後 chunkErrorRecovery 會 reload，使用者看到的是 toast + 黑底，無「發生錯誤」嚇人字眼
+    if (this.state.recovering) {
+      return (
+        <div
+          style={{
+            width: "100vw",
+            height: "100vh",
+            background: "#06080d",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "rgba(255,255,255,0.4)",
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: "0.7rem",
+            letterSpacing: "0.3em",
+            textTransform: "uppercase",
+          }}
+        >
+          syncing…
+        </div>
+      );
     }
 
     return (

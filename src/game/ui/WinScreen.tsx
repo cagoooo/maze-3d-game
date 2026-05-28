@@ -1,6 +1,9 @@
 import { Leaderboard } from "./Leaderboard";
 import { Footer } from "./Footer";
 import type { LeaderboardEntry } from "../leaderboard";
+import { theme } from "./theme";
+import { GlassCard, Corners, Eyebrow } from "./GlassCard";
+import { CorridorBackdrop } from "./CorridorBackdrop";
 
 interface WinScreenProps {
   score: number;
@@ -11,136 +14,234 @@ interface WinScreenProps {
   rank: number | null;
 }
 
-export function WinScreen({ score, timeBonus, elapsed, onRestart, leaderboard, rank }: WinScreenProps) {
+export function WinScreen({
+  score,
+  timeBonus,
+  elapsed,
+  onRestart,
+  leaderboard,
+  rank,
+}: WinScreenProps) {
   const minutes = Math.floor(elapsed / 60);
   const seconds = elapsed % 60;
-  const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  const timeStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const collectScore = score - timeBonus;
 
   return (
     <div
       className="maze-overlay-in"
       style={{
-        position: 'fixed',
+        position: "fixed",
         inset: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'rgba(0,0,0,0.88)',
+        background: theme.bgDeep,
         zIndex: 100,
-        backdropFilter: 'blur(8px)',
-        userSelect: 'none',
-        overflowY: 'auto',
+        userSelect: "none",
+        overflowY: "auto",
+        fontFamily: theme.body,
+        color: theme.white,
       }}
     >
+      <CorridorBackdrop tint="mint" orbCount={3} />
+
       <div
-        className="maze-win-badge"
         style={{
-          fontSize: '3.5rem',
-          marginBottom: '0.5rem',
+          position: "relative",
+          zIndex: 1,
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "60px 16px 40px",
+          gap: 32,
+          animation: "imm-fade-in .6s ease",
         }}
       >
-        🏆
-      </div>
-
-      <h1 style={{
-        fontSize: '2.8rem',
-        fontWeight: 900,
-        color: '#ffd700',
-        textShadow: '0 0 30px rgba(255,215,0,0.8), 0 0 60px rgba(255,165,0,0.4)',
-        marginBottom: '0.5rem',
-      }}>
-        恭喜過關！
-      </h1>
-
-      <p style={{ color: 'rgba(255,220,100,0.7)', fontSize: '1rem', marginBottom: '2rem' }}>
-        你成功收集了所有光球！
-      </p>
-
-      <div style={{
-        background: 'rgba(20,15,0,0.8)',
-        border: '1px solid rgba(255,215,0,0.3)',
-        borderRadius: '12px',
-        padding: '1.5rem 2.5rem',
-        marginBottom: '2rem',
-        textAlign: 'center',
-        minWidth: '260px',
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,220,100,0.7)', fontSize: '0.9rem' }}>
-            <span>收集得分</span>
-            <span style={{ color: '#fff', fontWeight: 700 }}>{score - timeBonus}</span>
+        {/* Hero score */}
+        <div style={{ textAlign: "center" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 18,
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: theme.mint,
+                boxShadow: `0 0 14px ${theme.mint}`,
+              }}
+            />
+            <Eyebrow color={theme.mint}>STAGE CLEAR · 通關成功</Eyebrow>
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: theme.mint,
+                boxShadow: `0 0 14px ${theme.mint}`,
+              }}
+            />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,220,100,0.7)', fontSize: '0.9rem' }}>
-            <span>時間獎勵</span>
-            <span style={{ color: '#00e5ff', fontWeight: 700 }}>+{timeBonus}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,220,100,0.7)', fontSize: '0.9rem' }}>
-            <span>完成時間</span>
-            <span style={{ color: '#fff' }}>{timeStr}</span>
-          </div>
-          <div style={{ borderTop: '1px solid rgba(255,215,0,0.2)', paddingTop: '0.6rem', marginTop: '0.2rem' }}>
-            <div style={{ color: 'rgba(255,220,100,0.7)', fontSize: '0.85rem', marginBottom: '0.2rem' }}>總得分</div>
-            <div
-              className="maze-score-pop"
-              style={{ color: '#ffd700', fontSize: '2.5rem', fontWeight: 900 }}
-              data-testid="text-win-score"
+
+          <h1
+            data-testid="text-win-score"
+            style={{
+              margin: 0,
+              fontFamily: theme.display,
+              fontSize: "clamp(72px, 13vw, 128px)",
+              fontWeight: 200,
+              letterSpacing: "-0.04em",
+              lineHeight: 1,
+              color: theme.white,
+            }}
+          >
+            <span
+              style={{
+                background: `linear-gradient(180deg, #fff 0%, ${theme.mint} 100%)`,
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
             >
-              {score}
-            </div>
-          </div>
-        </div>
-      </div>
+              {score.toLocaleString()}
+            </span>
+          </h1>
 
-      {rank !== null && (
-        <div
-          data-testid="text-new-rank"
+          <div
+            style={{
+              marginTop: 12,
+              fontSize: 16,
+              color: theme.textDim,
+              letterSpacing: "0.1em",
+            }}
+          >
+            最終分數 · Final Score
+          </div>
+
+          {rank !== null && (
+            <div
+              data-testid="text-new-rank"
+              style={{
+                marginTop: 12,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 16px",
+                border: `1px solid ${theme.amber}`,
+                color: theme.amber,
+                fontFamily: theme.mono,
+                fontSize: 11,
+                letterSpacing: "0.3em",
+                borderRadius: 30,
+                background: "rgba(255,215,110,.08)",
+              }}
+            >
+              ★ NEW RECORD · 排行榜第 {rank} 名
+            </div>
+          )}
+        </div>
+
+        {/* Stats */}
+        <GlassCard style={{ padding: "26px 36px", width: "min(720px, 100%)" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
+            <StatCell label="COLLECT SCORE" zh="收集得分" value={collectScore.toLocaleString()} color={theme.cyan} />
+            <StatCell label="TIME BONUS" zh="時間加分" value={`+${timeBonus.toLocaleString()}`} color={theme.mint} border />
+            <StatCell label="ELAPSED" zh="完成時間" value={timeStr} color={theme.amber} />
+          </div>
+        </GlassCard>
+
+        {/* Leaderboard */}
+        <div style={{ width: "min(720px, 100%)" }}>
+          <Leaderboard entries={leaderboard} highlightRank={rank} accent={theme.mint} />
+        </div>
+
+        {/* CTA */}
+        <button
+          onClick={onRestart}
+          data-testid="button-play-again"
           style={{
-            color: '#ffd700',
-            fontWeight: 800,
-            fontSize: '0.95rem',
-            marginBottom: '1rem',
-            textShadow: '0 0 12px rgba(255,215,0,0.6)',
+            padding: "16px 40px",
+            background: theme.white,
+            color: theme.bgDeep,
+            border: "none",
+            borderRadius: 3,
+            fontSize: 14,
+            fontWeight: 700,
+            letterSpacing: "0.3em",
+            fontFamily: theme.body,
+            cursor: "pointer",
+            textTransform: "uppercase",
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+          }}
+          onMouseEnter={(e) => {
+            (e.target as HTMLButtonElement).style.background = theme.mint;
+          }}
+          onMouseLeave={(e) => {
+            (e.target as HTMLButtonElement).style.background = theme.white;
           }}
         >
-          🎉 新紀錄！本局擠進第 {rank} 名
-        </div>
-      )}
+          再玩一次
+          <span style={{ fontFamily: theme.mono, fontSize: 10, opacity: 0.55, letterSpacing: "0.2em" }}>
+            ↵ ENTER
+          </span>
+        </button>
 
-      <div style={{ marginBottom: '2rem' }}>
-        <Leaderboard entries={leaderboard} highlightRank={rank} accent="#ffd700" />
+        <Footer />
       </div>
 
-      <button
-        onClick={onRestart}
-        data-testid="button-play-again"
+      <Corners color={`${theme.mint}55`} />
+    </div>
+  );
+}
+
+function StatCell({
+  label,
+  zh,
+  value,
+  color,
+  border = false,
+}: {
+  label: string;
+  zh: string;
+  value: string;
+  color: string;
+  border?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        padding: "0 24px",
+        textAlign: "center",
+        borderLeft: border ? `1px solid ${theme.borderSoft}` : "none",
+        borderRight: border ? `1px solid ${theme.borderSoft}` : "none",
+      }}
+    >
+      <Eyebrow color={theme.textFade} size={9} style={{ marginBottom: 8 }}>
+        {label}
+      </Eyebrow>
+      <div
         style={{
-          padding: '0.9rem 2.5rem',
-          fontSize: '1.1rem',
-          fontWeight: 700,
-          color: '#0a0a1a',
-          background: 'linear-gradient(135deg, #ffd700, #ff8c00)',
-          border: 'none',
-          borderRadius: '50px',
-          cursor: 'pointer',
-          boxShadow: '0 0 20px rgba(255,215,0,0.4)',
-          letterSpacing: '0.05em',
-          transition: 'transform 0.1s',
+          fontFamily: theme.body,
+          fontSize: 30,
+          fontWeight: 300,
+          color,
+          letterSpacing: "-0.01em",
+          lineHeight: 1.1,
+          fontVariantNumeric: "tabular-nums",
         }}
-        onMouseEnter={e => (e.target as HTMLButtonElement).style.transform = 'scale(1.05)'}
-        onMouseLeave={e => (e.target as HTMLButtonElement).style.transform = 'scale(1)'}
       >
-        再玩一次
-      </button>
-
-      <Footer />
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.15); }
-        }
-      `}</style>
+        {value}
+      </div>
+      <div style={{ marginTop: 4, fontSize: 11, color: theme.textFade, letterSpacing: "0.1em" }}>
+        {zh}
+      </div>
     </div>
   );
 }
