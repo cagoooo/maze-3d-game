@@ -39,3 +39,7 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 .firebaserc.local
+
+# 字型原始檔（11+ MB 不適合 commit；用 npm run subset-og-font 後產生的 *-Subset.ttf 才 commit）
+scripts/fonts/NotoSansTC-VF.ttf
+scripts/fonts/*.woff2

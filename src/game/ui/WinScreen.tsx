@@ -1,6 +1,8 @@
 import { Leaderboard } from "./Leaderboard";
 import { Footer } from "./Footer";
-import type { LeaderboardEntry } from "../leaderboard";
+import { ShareButton } from "./ShareButton";
+import { loadProfile, type LeaderboardEntry } from "../leaderboard";
+import type { Difficulty } from "../difficulty";
 import { theme } from "./theme";
 import { GlassCard, Corners, Eyebrow } from "./GlassCard";
 import { CorridorBackdrop } from "./CorridorBackdrop";
@@ -12,6 +14,8 @@ interface WinScreenProps {
   onRestart: () => void;
   leaderboard: LeaderboardEntry[];
   rank: number | null;
+  difficulty: Difficulty;
+  totalOrbs: number;
 }
 
 export function WinScreen({
@@ -21,7 +25,10 @@ export function WinScreen({
   onRestart,
   leaderboard,
   rank,
+  difficulty,
+  totalOrbs,
 }: WinScreenProps) {
+  const profile = loadProfile();
   const minutes = Math.floor(elapsed / 60);
   const seconds = elapsed % 60;
   const timeStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
@@ -159,6 +166,20 @@ export function WinScreen({
         <div style={{ width: "min(720px, 100%)" }}>
           <Leaderboard entries={leaderboard} highlightRank={rank} accent={theme.mint} />
         </div>
+
+        {/* Share */}
+        <ShareButton
+          data={{
+            nickname: profile.nickname,
+            classCode: profile.classCode,
+            score,
+            timeLeft: 0,
+            elapsed,
+            rank,
+            difficulty,
+            totalOrbs,
+          }}
+        />
 
         {/* CTA */}
         <button

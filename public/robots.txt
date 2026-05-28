@@ -1,2 +1,24 @@
 User-agent: *
 Allow: /
+
+# 不索引後台
+Disallow: /?admin=true
+Disallow: /admin
+
+# 不索引分享頁參數組合（避免 duplicate content 扣分）
+Disallow: /?utm_*
+
+# 社群爬蟲明確 allow（保險）
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LineBot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+Sitemap: https://cagoooo.github.io/maze-3d-game/sitemap.xml

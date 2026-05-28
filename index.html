@@ -39,9 +39,55 @@
     <link rel="alternate icon" type="image/png" sizes="512x512" href="icon-512.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
     <link rel="canonical" href="https://cagoooo.github.io/maze-3d-game/" />
+    <link rel="alternate" hreflang="zh-TW" href="https://cagoooo.github.io/maze-3d-game/" />
+    <link rel="alternate" hreflang="x-default" href="https://cagoooo.github.io/maze-3d-game/" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Structured Data: Schema.org VideoGame（Google Rich Results） -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "3D 迷宮冒險",
+      "alternateName": ["3D Maze Adventure", "3D Maze Game"],
+      "description": "第一人稱 3D 迷宮探索遊戲。收集藍色光球、避開紅色巡守者、與時間賽跑。React + Three.js 製作，由阿凱老師（桃園市龍潭區石門國民小學）開發。桌機與 iPad 觸控全支援，含全班 / 全校排行榜。",
+      "url": "https://cagoooo.github.io/maze-3d-game/",
+      "image": "https://cagoooo.github.io/maze-3d-game/opengraph.png",
+      "applicationCategory": "GameApplication",
+      "applicationSubCategory": "Educational",
+      "operatingSystem": "Web, Windows, macOS, iOS, Android, ChromeOS",
+      "inLanguage": "zh-TW",
+      "isAccessibleForFree": true,
+      "isFamilyFriendly": true,
+      "contentRating": "全年齡 / 適合國小以上",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "TWD",
+        "availability": "https://schema.org/InStock"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "阿凱老師",
+        "affiliation": {
+          "@type": "EducationalOrganization",
+          "name": "桃園市龍潭區石門國民小學",
+          "url": "https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5"
+        }
+      },
+      "publisher": {
+        "@type": "Person",
+        "name": "阿凱老師"
+      },
+      "gamePlatform": ["Web Browser", "Progressive Web App"],
+      "genre": ["Action", "Adventure", "Educational", "First-Person"],
+      "playMode": "SinglePlayer",
+      "keywords": "3D 迷宮, 第一人稱, 探索遊戲, 教學工具, 阿凱老師, 石門國小, Three.js, React, PWA, 教育遊戲"
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

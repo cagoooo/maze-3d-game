@@ -533,6 +533,8 @@ export function MazeGame() {
           onRestart={handleRestart}
           leaderboard={leaderboard}
           rank={lastRank}
+          difficulty={difficulty}
+          totalOrbs={totalOrbs}
         />
       )}
     </div>
