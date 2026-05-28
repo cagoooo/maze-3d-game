@@ -13,12 +13,24 @@ const port = Number(process.env.PORT) || 5173;
 // 把 package.json 的 version 注入給前端用（HUD / StartScreen 顯示）
 const pkg = JSON.parse(readFileSync(path.resolve(import.meta.dirname, "package.json"), "utf-8"));
 
+// OG 圖 cache-bust 用：版本字串 + 短 hash，每次 build 都不同，
+// 強制 FB / LINE / Twitter CDN 重抓新預覽圖（按 skill og-social-preview-zh §5）
+const ogImageVersion = `${pkg.version}-${Date.now().toString(36)}`;
+
 export default defineConfig({
   base: basePath,
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
+  // index.html 內的 __OG_IMAGE_VERSION__ 占位字串，build 時替換成 ogImageVersion
+  // 不用 define 是因為 define 只處理 .ts/.tsx 內的 token，不處理 .html
   plugins: [
+    {
+      name: "og-image-version",
+      transformIndexHtml(html) {
+        return html.replace(/__OG_IMAGE_VERSION__/g, ogImageVersion);
+      },
+    },
     react(),
     tailwindcss(),
     VitePWA({
@@ -30,7 +42,10 @@ export default defineConfig({
       includeAssets: [
         "favicon.svg",
         "apple-touch-icon.png",
-        "opengraph.jpg",
+        "opengraph.png",
+        "icon-192.png",
+        "icon-512.png",
+        "icon-512-maskable.png",
         "robots.txt",
       ],
       manifest: {
@@ -45,14 +60,9 @@ export default defineConfig({
         start_url: basePath,
         scope: basePath,
         icons: [
-          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
-          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
-          {
-            src: "icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
-          },
+          { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
       workbox: {
