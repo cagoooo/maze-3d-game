@@ -68,18 +68,31 @@ firebase use --add --account=ipad@mail2.smes.tyc.edu.tw
 
 ### 2.1 加 API Key 限制（重要！）
 
-依 skill `gcp-api-key-secure-create`：
+依 skill `gcp-api-key-secure-create` + `firebase-stack-automation`：
 
-```powershell
-gcloud config set project maze-3d-game-prod --account=ipad@mail2.smes.tyc.edu.tw
-# 找到 Browser key（剛建立的）
-gcloud services api-keys list --account=ipad@mail2.smes.tyc.edu.tw
+```bash
+# 找 Browser key uid
+gcloud services api-keys list --project=maze-3d-game-prod \
+  --account=ipad@mail2.smes.tyc.edu.tw \
+  --format="table(uid,displayName)"
 
-# 加 HTTP referrer 限制（只允許從這些網域使用）
-gcloud services api-keys update <KEY_ID> `
-  --account=ipad@mail2.smes.tyc.edu.tw `
-  --allowed-referrers="https://cagoooo.github.io/*","http://localhost:*"
+# 套限制（一行寫齊全部 referrer + api-target，因為 gcloud 是 replace 不是 merge）
+gcloud services api-keys update <KEY_UID> \
+  --project=maze-3d-game-prod \
+  --account=ipad@mail2.smes.tyc.edu.tw \
+  --allowed-referrers="https://cagoooo.github.io/*,https://cagoooo.github.io,https://maze-3d-game-prod.firebaseapp.com/*,https://maze-3d-game-prod.web.app/*,http://localhost:*,http://localhost:5173/*" \
+  --api-target=service=firestore.googleapis.com \
+  --api-target=service=identitytoolkit.googleapis.com \
+  --api-target=service=securetoken.googleapis.com \
+  --api-target=service=firebaseinstallations.googleapis.com \
+  --api-target=service=cloudfunctions.googleapis.com
 ```
+
+> ⚠️ **必含 `firebaseapp.com` 與 `web.app`**：Google Sign-In popup 流程會跳到 `https://maze-3d-game-prod.firebaseapp.com/__/auth/handler`，**漏這條會看到** `Requests from referer https://maze-3d-game-prod.firebaseapp.com/ are blocked.`（2026-05-27 D-SETUP 實測踩雷）。
+>
+> ⚠️ **限制變更需 3-5 分鐘 propagate**，剛設完別急著測，會以為沒生效。
+>
+> ⚠️ **後續若要更新 referrer，不能只傳 `--allowed-referrers`**（replace 語意）— **要把完整清單一次寫齊**，否則會洗掉其他項。同樣不要單獨傳 `--api-target`。
 
 ---
 
