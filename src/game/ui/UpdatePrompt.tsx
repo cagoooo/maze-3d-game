@@ -18,10 +18,11 @@
  * 設計參考：skill `pwa-cache-bust` §3 版本提示 banner + §4 雙線偵測
  */
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import { theme } from "./theme";
 import { Eyebrow } from "./GlassCard";
+import { useReducedMotion } from "./useReducedMotion";
 
 const SW_UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 60 分鐘
 const OFFLINE_READY_AUTOCLOSE_MS = 4500;
@@ -46,16 +47,8 @@ export function UpdatePrompt() {
     },
   });
 
-  // prefers-reduced-motion 偵測
-  const [reduceMotion, setReduceMotion] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduceMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+  // prefers-reduced-motion 偵測（v0.7.1 抽成共用 hook）
+  const reduceMotion = useReducedMotion();
 
   // offlineReady 自動關
   useEffect(() => {

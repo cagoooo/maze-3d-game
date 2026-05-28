@@ -1,4 +1,5 @@
 import { theme, tintPalette, type Tint } from "./theme";
+import { useReducedMotion } from "./useReducedMotion";
 
 interface CorridorBackdropProps {
   /** Tint 色相切換：cyan(預設)、mint(通關)、red(失敗)、amber(排行榜)。 */
@@ -22,6 +23,7 @@ export function CorridorBackdrop({
   corners = true,
 }: CorridorBackdropProps) {
   const tints = tintPalette[tint];
+  const reduceMotion = useReducedMotion();
   const gradId = `imm-far-${tint}`;
   const wallId = `imm-wall-${tint}`;
   const orbs = [
@@ -105,12 +107,14 @@ export function CorridorBackdrop({
           <g key={i} opacity={tint === "red" ? 0.4 : 1}>
             <circle cx={p.cx} cy={p.cy} r={p.r * 1.8} fill={tints.glow} opacity=".15" />
             <circle cx={p.cx} cy={p.cy} r={p.r} fill={tints.glow} opacity=".95">
-              <animate
-                attributeName="opacity"
-                values="1;.55;1"
-                dur={`${1.8 + i * 0.3}s`}
-                repeatCount="indefinite"
-              />
+              {!reduceMotion && (
+                <animate
+                  attributeName="opacity"
+                  values="1;.55;1"
+                  dur={`${1.8 + i * 0.3}s`}
+                  repeatCount="indefinite"
+                />
+              )}
             </circle>
             <circle
               cx={p.cx - p.r * 0.35}

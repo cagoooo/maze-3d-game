@@ -1,6 +1,6 @@
 {
   "name": "maze-3d-game",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "type": "module",
   "description": "3D 迷宮冒險 — React + Three.js 第一人稱迷宮探索遊戲（阿凱老師 / 石門國小）",
@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "og": "node scripts/build-og.mjs",
     "icons": "node scripts/build-icons.mjs",
-    "assets": "npm run og && npm run icons",
+    "screenshots": "node scripts/build-screenshots.mjs",
+    "assets": "npm run og && npm run icons && npm run screenshots",
     "subset-og-font": "node scripts/subset-og-font.mjs",
     "check-og": "node scripts/check-og.mjs",
     "lint": "eslint .",

@@ -52,7 +52,18 @@ export const tintPalette: Record<
   amber: { far: "#5c4a2a", wallA: "#3a2e1a", wallB: "#5c4a2a", glow: theme.amber },
 };
 
-/** 共用 keyframes — 在 App 啟動時呼叫一次即可。 */
+/**
+ * 共用 keyframes — 在 App 啟動時呼叫一次即可。
+ *
+ * 含 `prefers-reduced-motion: reduce` 覆寫：動暈症 / 前庭敏感 / 老花玩家
+ * 在 OS 開啟「減少動態效果」後，所有 imm-* keyframes 都會變成「無動作」靜止狀態。
+ *
+ * 注意：CSS `@media (prefers-reduced-motion)` 內覆寫的 `@keyframes` 會接管 base 定義
+ * （Chrome / Firefox / Safari 都支援）；但 SVG SMIL `<animate>` 元素 CSS 控不住，
+ * 需要 useReducedMotion hook 條件 render（見 CorridorBackdrop.tsx）。
+ *
+ * WCAG 2.3.3 (Animation from Interactions) Level AAA 要求。
+ */
 export function injectImmersiveKeyframes() {
   if (typeof document === "undefined") return;
   if (document.getElementById("imm-keyframes")) return;
@@ -63,6 +74,21 @@ export function injectImmersiveKeyframes() {
     @keyframes imm-pulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
     @keyframes imm-float { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-4px) } }
     @keyframes imm-fade-in { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      @keyframes imm-blink { 0%,100% { opacity:1 } 50% { opacity:1 } }
+      @keyframes imm-pulse { 0%,100% { opacity:1 } 50% { opacity:1 } }
+      @keyframes imm-float { 0%,100% { transform:none } 50% { transform:none } }
+      @keyframes imm-fade-in { from { opacity:1; transform:none; } to { opacity:1; transform:none; } }
+
+      /* 額外保護：把任何套用 imm-* animation 的元素的 transition 也關掉，避免 hover/state 切換閃爍 */
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
   `;
   document.head.appendChild(s);
 }

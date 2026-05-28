@@ -46,7 +46,10 @@ export default defineConfig({
         "icon-192.png",
         "icon-512.png",
         "icon-512-maskable.png",
+        "screenshot-wide.png",
+        "screenshot-mobile.png",
         "robots.txt",
+        "sitemap.xml",
       ],
       manifest: {
         name: "3D 迷宮冒險",
@@ -63,6 +66,48 @@ export default defineConfig({
           { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
           { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
           { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+        // PWA screenshots：Android Chrome / Edge / Samsung Internet 加裝主畫面對話框會顯示
+        screenshots: [
+          {
+            src: "screenshot-wide.png",
+            sizes: "1280x720",
+            type: "image/png",
+            form_factor: "wide",
+            label: "3D 迷宮探索 — 桌機 / 平板橫向",
+          },
+          {
+            src: "screenshot-mobile.png",
+            sizes: "720x1280",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "3D 迷宮探索 — 手機豎向 + 觸控搖桿",
+          },
+        ],
+        // PWA shortcuts：iOS / Android 長按主畫面 icon 跳出快捷選單
+        // 學生可直接跳特定難度進場（搭配 urlParams.ts 已支援的 ?d= 參數）
+        shortcuts: [
+          {
+            name: "簡單難度",
+            short_name: "🌱 簡單",
+            description: "7×7 迷宮，180 秒，敵人不追擊（適合第一次玩 / 低年級）",
+            url: `${basePath}?d=easy`,
+            icons: [{ src: "icon-192.png", sizes: "192x192", type: "image/png" }],
+          },
+          {
+            name: "普通難度",
+            short_name: "🔥 普通",
+            description: "9×9 迷宮，150 秒（預設）",
+            url: `${basePath}?d=normal`,
+            icons: [{ src: "icon-192.png", sizes: "192x192", type: "image/png" }],
+          },
+          {
+            name: "困難難度",
+            short_name: "💀 困難",
+            description: "13×13 迷宮，敵人視線追蹤（高年級挑戰）",
+            url: `${basePath}?d=hard`,
+            icons: [{ src: "icon-192.png", sizes: "192x192", type: "image/png" }],
+          },
         ],
       },
       workbox: {

@@ -40,6 +40,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # 每次 CI 跑都重新生成 OG / favicon / icons / screenshots，避免本地忘記跑
+      # 依賴 scripts/fonts/NotoSansTC-{Bold,Regular}-Subset.ttf 已 commit（v0.7.0）
+      # Linux fontconfig 也保留作 fallback chain
+      - name: Generate visual assets
+        run: npm run assets
+
       - name: Build
         run: npm run build
         env:
