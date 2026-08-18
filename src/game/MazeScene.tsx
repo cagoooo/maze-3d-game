@@ -122,7 +122,6 @@ const Orb = memo(function Orb({ position, index, collectedRef }: {
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
-  const lightRef = useRef<THREE.PointLight>(null);
   const t = useRef(index * 0.7);
 
   useFrame((_, delta) => {
@@ -136,9 +135,6 @@ const Orb = memo(function Orb({ position, index, collectedRef }: {
       meshRef.current.position.y = position[1] + Math.sin(t.current * 1.8) * 0.18 + 0.55;
       meshRef.current.rotation.y += delta * 1.2;
       meshRef.current.rotation.x += delta * 0.5;
-    }
-    if (lightRef.current) {
-      lightRef.current.intensity = 1.0 + Math.sin(t.current * 4) * 0.3;
     }
   });
 
@@ -156,7 +152,6 @@ const Orb = memo(function Orb({ position, index, collectedRef }: {
           opacity={0.92}
         />
       </mesh>
-      <pointLight ref={lightRef} position={position} color="#00aaff" intensity={1.0} distance={5} />
     </group>
   );
 });
@@ -625,8 +620,10 @@ function PlayerController({
     const jx = tin.moveX;
     const jz = tin.moveZ;
     if (jx !== 0 || jz !== 0) {
-      mx += -jz * sinY + jx * cosY;
-      mz += -jz * cosY - jx * sinY;
+      // 搖桿的 moveZ 已經沿用畫面座標：往上為負值，也就是往前。
+      // 直接套用相機的 Y 軸旋轉，避免把前後方向再反相一次。
+      mx += jz * sinY + jx * cosY;
+      mz += jz * cosY - jx * sinY;
     }
 
     const len = Math.sqrt(mx * mx + mz * mz);
