@@ -7,6 +7,8 @@
 ![Stack](https://img.shields.io/badge/Vite-7-646cff?logo=vite)
 ![Stack](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript)
 
+🌐 **線上使用：[3D 迷宮冒險遊戲 — 第一人稱光球收集 × 全班排行榜](https://cagoooo.github.io/maze-3d-game/)**
+
 ## 快速開始
 
 ```bash
@@ -98,7 +100,7 @@ src/
 - Repository：`cagoooo/maze-3d-game`
 - 可見性：公開
 - 主要技術：TypeScript、React、Vite、Three.js、Firebase、Tailwind CSS
-- 線上入口：未在 GitHub repository metadata 設定
+- 線上入口：<https://cagoooo.github.io/maze-3d-game/>
 
 ### 可以怎麼應用
 
