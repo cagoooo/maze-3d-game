@@ -4,7 +4,7 @@ interface FooterProps {
 }
 
 const TEACHER_URL =
-  "https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5";
+  "https://www.smes.tyc.edu.tw/modules/school/index.php?department_id=2&zone_id=0&page_id=2&content_id=11&type=news&from_op=all_news#a5";
 
 export function Footer({ variant = "dark", showVersion = false }: FooterProps) {
   const baseColor =
