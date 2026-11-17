@@ -9,7 +9,7 @@
 
 🌐 **線上使用：[3D 迷宮冒險遊戲 — 第一人稱光球收集 × 全班排行榜](https://cagoooo.github.io/maze-3d-game/)**
 
-> 📌 **目前版本：v0.7.1**（依據 `package.json`）
+> 📌 **目前版本：v0.7.2**（依據 `package.json`）
 
 ## 快速開始
 

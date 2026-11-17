@@ -29,6 +29,20 @@ export function isChunkError(message: string | undefined | null): boolean {
   return CHUNK_ERR_PATTERN.test(message);
 }
 
+// 同網域（cagoooo.github.io）的其他工具共用 Cache Storage 與 SW 註冊，自癒時只清本遊戲自己的：
+// - SW 註冊：scope 在本站根路徑（BASE_URL，例 /maze-3d-game/）底下
+// - workbox 預快取：名稱含本站 scope 網址（例 workbox-precache-v2-https://cagoooo.github.io/maze-3d-game/）
+// - runtime 快取：vite.config.ts runtimeCaching 的 cacheName
+const OWN_RUNTIME_CACHES = ["three-libs", "audio"];
+
+function ownScope(): string {
+  return new URL(import.meta.env.BASE_URL || "/", window.location.origin).href;
+}
+
+function isOwnCache(name: string): boolean {
+  return name.includes(ownScope()) || OWN_RUNTIME_CACHES.includes(name);
+}
+
 let recoveryInFlight = false;
 
 export async function recoverFromChunkError(reason: string): Promise<void> {
@@ -51,21 +65,24 @@ export async function recoverFromChunkError(reason: string): Promise<void> {
 
   showRecoveryToast();
 
-  // 1. unregister 所有 SW（防舊 SW 又從 cache 回傳舊 chunk URL）
+  // 1. unregister 本站的 SW（防舊 SW 又從 cache 回傳舊 chunk URL）
   try {
     if ("serviceWorker" in navigator) {
+      const scope = ownScope();
       const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((reg) => reg.unregister().catch(() => false)));
+      await Promise.all(
+        regs.filter((reg) => reg.scope.startsWith(scope)).map((reg) => reg.unregister().catch(() => false)),
+      );
     }
   } catch (e) {
     console.warn("[chunk-recovery] unregister SW 失敗:", e);
   }
 
-  // 2. 清所有 Cache Storage
+  // 2. 清本站的 Cache Storage
   try {
     if ("caches" in window) {
       const keys = await caches.keys();
-      await Promise.all(keys.map((k) => caches.delete(k).catch(() => false)));
+      await Promise.all(keys.filter(isOwnCache).map((k) => caches.delete(k).catch(() => false)));
     }
   } catch (e) {
     console.warn("[chunk-recovery] 清 cache 失敗:", e);
