@@ -33,7 +33,7 @@ export function isChunkError(message: string | undefined | null): boolean {
 // - SW 註冊：scope 在本站根路徑（BASE_URL，例 /maze-3d-game/）底下
 // - workbox 預快取：名稱含本站 scope 網址（例 workbox-precache-v2-https://cagoooo.github.io/maze-3d-game/）
 // - runtime 快取：vite.config.ts runtimeCaching 的 cacheName
-const OWN_RUNTIME_CACHES = ["three-libs", "audio"];
+const OWN_RUNTIME_CACHES = ["maze-3d-game-three-libs", "maze-3d-game-audio"];
 
 function ownScope(): string {
   return new URL(import.meta.env.BASE_URL || "/", window.location.origin).href;

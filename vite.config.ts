@@ -118,7 +118,7 @@ export default defineConfig({
             urlPattern: /\/assets\/(three|r3f)-.*\.js$/,
             handler: "CacheFirst",
             options: {
-              cacheName: "three-libs",
+              cacheName: "maze-3d-game-three-libs",
               expiration: {
                 maxEntries: 8,
                 maxAgeSeconds: 60 * 60 * 24 * 60,
@@ -129,7 +129,7 @@ export default defineConfig({
             urlPattern: /\/audio\/.*\.(mp3|ogg|wav)$/,
             handler: "CacheFirst",
             options: {
-              cacheName: "audio",
+              cacheName: "maze-3d-game-audio",
               expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 60 },
             },
           },
