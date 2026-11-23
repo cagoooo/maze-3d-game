@@ -193,6 +193,16 @@ export function MazeGame() {
     };
   }, [gameState, effectiveLocked, difficulty.time]);
 
+  // 觸控裝置：切到別的 App／分頁時自動暫停（不自動恢復，需玩家手動繼續）
+  useEffect(() => {
+    if (!platform.isTouch || gameState !== "playing") return;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") setTouchPaused(true);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [gameState, platform.isTouch]);
+
   const handleStart = useCallback(() => {
     // 初次按開始：iOS Safari 需要使用者互動後才可載音檔
     initAudio();
@@ -297,6 +307,9 @@ export function MazeGame() {
 
   const handleDamage = useCallback(() => {
     playSfx("damage");
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(50);
+    }
     setHealth((h) => {
       const next = h - 1;
       if (next <= 0) {

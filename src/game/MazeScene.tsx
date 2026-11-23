@@ -10,6 +10,8 @@ const WALL_HEIGHT = 3.5;
 const PLAYER_HEIGHT = 1.6;
 const PLAYER_SPEED = 6;
 const PLAYER_RADIUS = 0.6;
+const MAX_STEP_DIST = 0.2; // 玩家單一子步最大位移（公尺）
+const MAX_DELTA = 0.05; // 單幀時間上限（秒）：切 App 回來的大 delta 不可讓人穿牆
 const ORB_COLLECT_DIST = 1.3;
 const ENEMY_DAMAGE_DIST = 0.95;
 
@@ -124,7 +126,8 @@ const Orb = memo(function Orb({ position, index, collectedRef }: {
   const meshRef = useRef<THREE.Mesh>(null);
   const t = useRef(index * 0.7);
 
-  useFrame((_, delta) => {
+  useFrame((_, rawDelta) => {
+    const delta = Math.min(rawDelta, MAX_DELTA);
     const isCollected = collectedRef.current[index];
     if (groupRef.current && groupRef.current.visible === isCollected) {
       groupRef.current.visible = !isCollected;
@@ -180,7 +183,7 @@ const Item = memo(function Item({
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
-  const lightRef = useRef<THREE.PointLight>(null);
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
   const t = useRef(index * 0.4 + Math.PI / 3);
 
   const visual = ITEM_VISUAL[type];
@@ -198,8 +201,8 @@ const Item = memo(function Item({
       meshRef.current.rotation.y += delta * 1.5;
       meshRef.current.rotation.x += delta * 0.6;
     }
-    if (lightRef.current) {
-      lightRef.current.intensity = 0.9 + Math.sin(t.current * 5) * 0.25;
+    if (matRef.current) {
+      matRef.current.emissiveIntensity = 3.2 + Math.sin(t.current * 5) * 0.6;
     }
   });
 
@@ -221,22 +224,16 @@ const Item = memo(function Item({
       <mesh ref={meshRef} position={position}>
         {geometry}
         <meshStandardMaterial
+          ref={matRef}
           color={visual.color}
           emissive={visual.emissive}
-          emissiveIntensity={2.5}
+          emissiveIntensity={3.2}
           roughness={0.15}
           metalness={0.7}
           transparent
           opacity={type === "stealth" ? 0.55 : 0.95}
         />
       </mesh>
-      <pointLight
-        ref={lightRef}
-        position={position}
-        color={visual.color}
-        intensity={0.9}
-        distance={4}
-      />
     </group>
   );
 });
@@ -267,6 +264,11 @@ function hasLineOfSight(
 }
 
 const CHASE_DURATION_MS = 3000;
+// 暫存物件（每幀重複使用，避免產生垃圾）
+const tmpEuler = new THREE.Euler();
+const tmpForward = new THREE.Vector3();
+const patrolTarget = new THREE.Vector3();
+const patrolDir = new THREE.Vector3();
 const CHASE_SPEED = 3.4;
 const PATROL_SPEED = 2.5;
 const LOS_CHECK_INTERVAL = 0.4;
@@ -302,7 +304,8 @@ function Enemy({
   const losTimer = useRef(0);
   const chaseUntil = useRef(0);
 
-  useFrame((_, delta) => {
+  useFrame((_, rawDelta) => {
+    const delta = Math.min(rawDelta, MAX_DELTA);
     if (!gameActive) {
       if (meshRef.current) meshRef.current.position.copy(posRef.current);
       if (glowRef.current) glowRef.current.position.copy(posRef.current);
@@ -342,12 +345,12 @@ function Enemy({
     } else if (path.length >= 2) {
       // 巡邏模式（原本邏輯）
       const target = path[targetIdx.current];
-      const targetPos = new THREE.Vector3(
+      const targetPos = patrolTarget.set(
         toWorld(target.x),
         0.5,
         toWorld(target.z),
       );
-      const dir = targetPos.clone().sub(posRef.current);
+      const dir = patrolDir.copy(targetPos).sub(posRef.current);
       const dist = dir.length();
 
       if (dist < 0.08) {
@@ -569,12 +572,13 @@ function PlayerController({
     };
   }, [gl, onLockChange, isTouchDevice]);
 
-  useFrame((_, delta) => {
-    const euler = new THREE.Euler(pitch.current, yaw.current, 0, "YXZ");
+  useFrame((_, rawDelta) => {
+    const delta = Math.min(rawDelta, MAX_DELTA);
+    const euler = tmpEuler.set(pitch.current, yaw.current, 0, "YXZ");
     camera.quaternion.setFromEuler(euler);
 
     const updateTorch = () => {
-      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+      const forward = tmpForward.set(0, 0, -1).applyQuaternion(camera.quaternion);
       if (torchRef.current) {
         torchRef.current.position.copy(camera.position);
         torchRef.current.target.position.copy(camera.position).add(forward.multiplyScalar(8));
@@ -631,14 +635,19 @@ function PlayerController({
       const speed = PLAYER_SPEED * playerSpeedMultiplier * delta;
       const normX = mx / len;
       const normZ = mz / len;
-      const nx = playerPos.current.x + normX * speed;
-      const nz = playerPos.current.z + normZ * speed;
+      // 位移過大時拆成子步，逐步檢查碰撞，避免一步跨過牆
+      const steps = Math.max(1, Math.ceil(speed / MAX_STEP_DIST));
+      const stepSpeed = speed / steps;
+      for (let s = 0; s < steps; s++) {
+        const nx = playerPos.current.x + normX * stepSpeed;
+        const nz = playerPos.current.z + normZ * stepSpeed;
 
-      if (!checkWallCollision(mazeData.grid, nx, playerPos.current.z, PLAYER_RADIUS)) {
-        playerPos.current.x = nx;
-      }
-      if (!checkWallCollision(mazeData.grid, playerPos.current.x, nz, PLAYER_RADIUS)) {
-        playerPos.current.z = nz;
+        if (!checkWallCollision(mazeData.grid, nx, playerPos.current.z, PLAYER_RADIUS)) {
+          playerPos.current.x = nx;
+        }
+        if (!checkWallCollision(mazeData.grid, playerPos.current.x, nz, PLAYER_RADIUS)) {
+          playerPos.current.z = nz;
+        }
       }
     }
 
@@ -768,7 +777,7 @@ export const MazeScene = memo(function MazeScene({
     <Canvas
         camera={{ fov: 80, near: 0.1, far: 120 }}
         style={{ width: "100%", height: "100%" }}
-        shadows
+        dpr={[1, 1.5]}
         gl={{ antialias: true }}
       >
         <color attach="background" args={["#0a1428"]} />
